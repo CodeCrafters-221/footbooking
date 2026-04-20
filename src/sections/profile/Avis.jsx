@@ -12,6 +12,7 @@ import { useAuth } from "../../context/AuthContext";
 import { ReviewService } from "../../services/ReviewService";
 import { ReservationService } from "../../services/ReservationService";
 import { toast } from "react-toastify";
+import { decodeSanitizedString } from "../../utils/security";
 
 // Modal pour laisser un avis sur un terrain spécifique
 export const ReviewModal = ({ isOpen, onClose, terrain, onReviewed }) => {
@@ -365,7 +366,7 @@ const Avis = () => {
                 </div>
                 <div className="bg-[#231a10]/50 rounded-xl p-4 border border-white/5 italic">
                   <p className="text-text-secondary text-sm">
-                    "{review.commentaire}"
+                    "{decodeSanitizedString(review.commentaire)}"
                   </p>
                 </div>
               </div>

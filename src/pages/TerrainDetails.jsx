@@ -3,12 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import ReservationModal from "../components/ReservationModal";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
+import { decodeSanitizedString } from "../utils/security";
 import {
   useAvailability,
   useTerrainData,
   useTerrainImageManager,
   useTerrainReviews,
 } from "../hooks/useTerrainDetailsLogic";
+import { useFavorites } from "../hooks/useFavorites";
 import {
   Trophy,
   Search,
@@ -83,9 +85,15 @@ export default function TerrainDetails() {
     }
   };
 
-  const [isSaved, setIsSaved] = useState(false);
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const isSaved = terrain ? isFavorite(terrain.id) : false;
+  
   const handleSave = () => {
-    setIsSaved(!isSaved);
+    if (!user) {
+      toast.info("Veuillez vous connecter pour sauvegarder ce terrain.");
+      return;
+    }
+    toggleFavorite(terrain);
     if (!isSaved) {
       toast.success("Terrain ajouté aux favoris !");
     } else {
@@ -652,7 +660,7 @@ export default function TerrainDetails() {
                         </div>
                         <div className="bg-[#231a10]/50 rounded-2xl p-4 border border-[#493622]/50 italic">
                           <p className="text-[#cbad90] text-sm leading-relaxed">
-                            "{review?.commentaire}"
+                            "{decodeSanitizedString(review?.commentaire || '')}"
                           </p>
                         </div>
                       </div>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useDashboard } from "../../context/DashboardContext";
+import { isSubscription, isPaidStatus } from "../../utils/dateTime";
 import {
   ChevronLeft,
   ChevronRight,
@@ -7,7 +8,16 @@ import {
   Clock,
   User,
   MapPin,
+  RefreshCcw,
 } from "lucide-react";
+
+// Helper for local YYYY-MM-DD
+const getLocalYYYYMMDD = (d) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const CalendarMatch = () => {
   const { reservations, subscriptions } = useDashboard();
@@ -16,6 +26,7 @@ const CalendarMatch = () => {
   // Formatter pour la date affichée
   const formatDate = (date) => {
     return new Intl.DateTimeFormat("fr-FR", {
+      weekday: "long",
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -23,22 +34,18 @@ const CalendarMatch = () => {
   };
 
   const dailyReservations = (() => {
-    const selectedDateStr = selectedDate.toDateString();
+    const selectedDateStr = getLocalYYYYMMDD(selectedDate);
     const selectedDayOfWeek = selectedDate.getDay();
 
     // 1. Réservations uniques (Uniquement celles confirmées/payées)
     const singleMatches = (reservations || [])
       .filter((res) => {
-        const resDate = new Date(res.date);
-        const status = (res.status || "").toLowerCase();
-        const isConfirmed = ["payé", "confirmé", "active", "success"].includes(
-          status,
-        );
-
+        // Use res.originalDate as it retains the raw "YYYY-MM-DD" from Supabase
+        const resDateStr = res.originalDate || res.date;
         return (
-          resDate.toDateString() === selectedDateStr &&
-          res.reservationType !== "subscription" &&
-          isConfirmed
+          resDateStr === selectedDateStr &&
+          !isSubscription(res) &&
+          isPaidStatus(res.status)
         );
       })
       .map((res) => ({ ...res, matchType: "single" }));
@@ -46,38 +53,33 @@ const CalendarMatch = () => {
     // 2. Abonnements qui tombent ce jour-là (Uniquement ceux confirmés/payés)
     const subscriptionMatches = (subscriptions || [])
       .filter((sub) => {
-        const status = (sub.status || "").toLowerCase();
-        const isConfirmed = ["payé", "confirmé", "active", "success"].includes(
-          status,
-        );
+        if (!isPaidStatus(sub.status)) return false;
 
-        if (!isConfirmed) return false;
+        const startStr = sub.startDate;
+        const endStr = sub.endDate;
+        const withinRange = selectedDateStr >= startStr && selectedDateStr <= endStr;
 
-        const start = new Date(sub.startDate);
-        const end = new Date(sub.endDate);
-
-        // Normalisation des dates pour comparaison (sans l'heure)
-        const d = new Date(selectedDate);
-        d.setHours(0, 0, 0, 0);
-        const s = new Date(sub.startDate);
-        s.setHours(0, 0, 0, 0);
-        const e = new Date(sub.endDate);
-        e.setHours(0, 0, 0, 0);
-
-        const withinRange = d >= s && d <= e;
-        const subDay =
-          sub.day_of_week !== undefined ? sub.day_of_week : start.getDay();
+        // Extract day of week from start date if sub.day_of_week is missing
+        let subDay = sub.day_of_week;
+        if (subDay === undefined) {
+          const sd = new Date(startStr);
+          subDay = sd.getDay();
+        }
 
         return withinRange && selectedDayOfWeek === subDay;
       })
       .map((sub) => ({
         ...sub,
+        id: sub.id || sub.subscription_id,
         matchType: "subscription",
       }));
 
-    return [...singleMatches, ...subscriptionMatches].sort((a, b) =>
-      (a.time || "").localeCompare(b.time || ""),
-    );
+    return [...singleMatches, ...subscriptionMatches].sort((a, b) => {
+      // Sort by time
+      const timeA = a.time || a.startTime || "";
+      const timeB = b.time || b.startTime || "";
+      return timeA.localeCompare(timeB);
+    });
   })();
 
   const changeDate = (days) => {
@@ -87,109 +89,163 @@ const CalendarMatch = () => {
   };
 
   return (
-    <div className="flex flex-col gap-5 md:gap-6 pb-20">
+    <div className="flex flex-col gap-6 md:gap-8 pb-20">
       {/* Header Calendrier */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center bg-[#2c241b] p-4 md:p-6 rounded-2xl border border-[#493622] gap-4">
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="p-2 md:p-3 bg-primary/10 rounded-xl shrink-0">
-            <CalendarIcon className="text-primary w-5 h-5 md:w-6 md:h-6" />
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center bg-gradient-to-br from-[#2c241b] to-[#231a10] p-5 md:p-7 rounded-3xl border border-[#493622] shadow-xl gap-5">
+        <div className="flex items-center gap-4">
+          <div className="p-3.5 md:p-4 bg-primary/20 rounded-2xl shrink-0 shadow-inner border border-primary/20">
+            <CalendarIcon className="text-primary w-6 h-6 md:w-7 md:h-7" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-white text-lg md:text-xl font-black italic">
+            <h2 className="text-white text-xl md:text-2xl font-black italic tracking-wide">
               Calendrier des Matchs
             </h2>
-            <p className="text-[#cbad90] text-xs md:text-sm truncate">
+            <p className="text-[#cbad90] text-xs md:text-sm mt-1 truncate">
               Réservations et matchs prévus par jour.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 bg-[#231a10] p-1.5 md:p-2 rounded-xl md:rounded-full border border-[#493622]">
+        <div className="flex items-center justify-between gap-1 bg-[#1a1208]/80 p-2 rounded-2xl border border-[#493622]/80 backdrop-blur-sm sm:w-auto w-full shadow-inner">
           <button
             onClick={() => changeDate(-1)}
-            className="p-2 hover:bg-primary/20 hover:text-primary text-[#cbad90] rounded-lg md:rounded-full transition-all active:scale-90"
+            className="p-3 bg-[#2c241b] hover:bg-primary text-[#cbad90] hover:text-[#231a10] rounded-xl transition-all shadow-sm active:scale-95"
           >
-            <ChevronLeft className="w-5 h-5 md:w-5 md:h-5" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
-          <span className="text-white text-sm md:text-base font-bold px-2 flex-1 text-center min-w-0 truncate">
+          <span className="text-white text-sm md:text-base font-bold px-4 flex-1 text-center min-w-[140px] capitalize">
             {formatDate(selectedDate)}
           </span>
           <button
             onClick={() => changeDate(1)}
-            className="p-2 hover:bg-primary/20 hover:text-primary text-[#cbad90] rounded-lg md:rounded-full transition-all active:scale-90"
+            className="p-3 bg-[#2c241b] hover:bg-primary text-[#cbad90] hover:text-[#231a10] rounded-xl transition-all shadow-sm active:scale-95"
           >
-            <ChevronRight className="w-5 h-5 md:w-5 md:h-5" />
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Liste des créneaux */}
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
         {dailyReservations.length > 0 ? (
-          dailyReservations.map((booking) => (
-            <div
-              key={booking.id}
-              className="group bg-[#2c241b] border border-[#493622] hover:border-primary/50 p-4 md:p-5 rounded-2xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 shadow-lg hover:shadow-primary/5"
-            >
-              <div className="flex items-start md:items-center gap-4 md:gap-6 w-full md:w-auto">
-                {/* Heure */}
-                <div className="flex flex-col items-center justify-center bg-[#231a10] border border-[#493622] rounded-xl w-24 h-16 md:w-30 md:h-20 shrink-0 group-hover:border-primary/30 transition-colors">
-                  <Clock className="w-4 h-4 md:w-5 md:h-5 text-primary mb-1" />
-                  <span className="text-white font-black text-sm md:text-md">
-                    {booking.time}
+          dailyReservations.map((booking, idx) => {
+            let startTimeDisplay = "N/A";
+            let endTimeDisplay = null;
+
+            if (booking.time) {
+              if (booking.time.includes("-")) {
+                const parts = booking.time.split("-").map(p => p.trim());
+                startTimeDisplay = parts[0];
+                endTimeDisplay = parts[1] || null;
+              } else {
+                startTimeDisplay = booking.time;
+              }
+            } else if (booking.startTime) {
+              startTimeDisplay = booking.startTime;
+              endTimeDisplay = booking.endTime || null;
+            }
+
+            const isSub = booking.matchType === "subscription";
+
+            return (
+              <div
+                key={`${booking.id}-${idx}`}
+                className="group relative bg-[#2c241b] border border-[#493622] hover:border-primary/50 overflow-hidden rounded-2xl transition-all shadow-lg hover:shadow-primary/10 flex flex-row items-stretch"
+              >
+                {/* Indicateur de type (ligne gauche) */}
+                <div
+                  className={`w-1.5 shrink-0 transition-colors ${
+                    isSub ? "bg-primary" : "bg-[#493622] group-hover:bg-[#5d452b]"
+                  }`}
+                />
+
+                {/* Bloc Heure (Gauche) Timeline design */}
+                <div className="w-24 md:w-28 flex flex-col items-center justify-center py-4 px-2 border-r border-[#493622]/50 bg-[#231a10]/40 shrink-0 relative">
+                  <div className="absolute top-1/2 -right-4 size-8 bg-primary/5 rounded-full blur-xl -translate-y-1/2"></div>
+                  
+                  <span className="text-white font-black text-lg md:text-xl tracking-tighter leading-none">
+                    {startTimeDisplay}
                   </span>
+                  
+                  {endTimeDisplay ? (
+                    <div className="flex flex-col items-center justify-center my-1.5">
+                      <div className="w-0.5 h-1 bg-[#493622] rounded-full mb-0.5"></div>
+                      <div className="w-0.5 h-1 bg-[#493622] rounded-full mb-0.5"></div>
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(242,127,13,0.6)]"></div>
+                    </div>
+                  ) : (
+                    <Clock
+                      className={`w-5 h-5 mt-2 transition-all opacity-50 ${
+                        isSub ? "text-primary" : "text-[#cbad90] group-hover:text-primary"
+                      }`}
+                    />
+                  )}
+
+                  {endTimeDisplay && (
+                    <span className="text-[#8c735a] font-bold text-[13px] md:text-sm tracking-tighter leading-none">
+                      {endTimeDisplay}
+                    </span>
+                  )}
                 </div>
 
-                {/* Infos Client */}
-                <div className="flex flex-col gap-1.5 md:gap-2 text-left flex-1 min-w-0">
-                  <div className="flex items-center justify-between md:justify-start gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <User className="w-4 h-4 text-primary shrink-0" />
-                      <h3 className="text-white font-bold text-base md:text-lg truncate">
-                        {booking.clientName}
+                {/* Corps de la carte */}
+                <div className="flex flex-col justify-between flex-1 p-3.5 md:p-4 min-w-0">
+                  {/* En-tête : Nom et Statut */}
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex flex-col min-w-0">
+                      <h3 className="text-white font-bold text-base md:text-lg truncate flex items-center gap-2">
+                        <User className="w-4 h-4 text-primary shrink-0" />
+                        <span className="truncate">{booking.clientName}</span>
                       </h3>
+                      <p className="text-[#8c735a] text-[11px] font-mono mt-0.5 ml-6">
+                        ID: {(booking.id || "").toString().substring(0, 8)}
+                      </p>
                     </div>
-                    {/* Badge Statut Mobile */}
-                    <div className="md:hidden">
-                      <StatusBadge status={booking.status} />
-                    </div>
+                    <StatusBadge status={booking.status} />
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2 text-[#cbad90] text-xs md:text-sm">
-                      <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
-                      <span className="truncate">{booking.fieldName}</span>
+                  {/* Bas : Terrain et Badge Type */}
+                  <div className="flex items-end justify-between mt-3 gap-2">
+                    <div className="flex items-center gap-2 bg-[#231a10] px-2.5 py-1.5 rounded-lg border border-[#493622]/50 max-w-[65%] sm:max-w-none">
+                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="text-[#cbad90] text-xs md:text-sm font-medium truncate">
+                        {booking.fieldName}
+                      </span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-[#5d452b] text-[10px] font-mono">
-                        ID: {booking.id.toString().substring(0, 8)}
-                      </p>
-                      {booking.matchType === "subscription" && (
-                        <div className="md:hidden">
-                          <SubscriptionBadge />
-                        </div>
-                      )}
-                    </div>
+
+                    {isSub ? (
+                      <div className="flex items-center gap-1 text-primary text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-primary/10 px-2 py-1 rounded shrink-0">
+                        <RefreshCcw className="w-3 h-3" />
+                        <span className="hidden xs:inline">Abonnement</span>
+                        <span className="xs:hidden">Abo</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-[#8c735a] text-[9px] md:text-[10px] font-black uppercase tracking-widest shrink-0">
+                        <span className="size-1.5 bg-[#8c735a]/50 rounded-full"></span>
+                        <span className="hidden xs:inline">Match Unique</span>
+                        <span className="xs:hidden">Unique</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-
-              {/* Desktop Status & Type */}
-              <div className="hidden md:flex flex-col items-end gap-2 shrink-0">
-                <StatusBadge status={booking.status} />
-                {booking.matchType === "subscription" && <SubscriptionBadge />}
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 bg-[#2c241b]/50 rounded-3xl border border-dashed border-[#493622]">
-            <div className="size-16 rounded-full bg-[#493622]/30 flex items-center justify-center mb-4">
-              <CalendarIcon className="w-8 h-8 text-[#5d452b]" />
+          <div className="col-span-full flex flex-col items-center justify-center py-24 bg-[#2c241b]/30 rounded-3xl border-2 border-dashed border-[#493622]">
+            <div className="size-20 rounded-full bg-[#493622]/40 flex items-center justify-center mb-6 shadow-inner">
+              <CalendarIcon className="w-10 h-10 text-[#5d452b]" />
             </div>
-            <h3 className="text-white font-bold text-lg">Aucun match prévu</h3>
-            <p className="text-[#cbad90] text-sm mt-1">
-              Il n'y a pas de réservation pour ce jour.
+            <h3 className="text-white font-black text-2xl">Aucun match</h3>
+            <p className="text-[#cbad90] text-base mt-2 max-w-xs text-center">
+              Il n'y a pas de réservation ou d'abonnement prévu pour cette journée.
             </p>
+            <button
+              onClick={() => setSelectedDate(new Date())}
+              className="mt-6 px-6 py-2.5 bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-[#231a10] rounded-xl font-bold transition-all"
+            >
+              Revenir à aujourd'hui
+            </button>
           </div>
         )}
       </div>
@@ -199,32 +255,29 @@ const CalendarMatch = () => {
 
 // Composants Badges internes pour un code plus propre et maintenable
 const StatusBadge = ({ status }) => {
+  const isPaid = isPaidStatus(status);
   const s = (status || "").toLowerCase();
-  const isActive = ["payé", "confirmé", "active", "success"].includes(s);
-  const isCancelled = s === "annulé";
+  const isCancelled = s === "annulé" || s === "cancelled";
 
+  if (isPaid) {
+    return (
+      <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-green-500/10 text-green-500 border border-green-500/20 shrink-0">
+        Confirmé
+      </span>
+    );
+  }
+  if (isCancelled) {
+    return (
+      <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-red-500/10 text-red-500 border border-red-500/20 shrink-0">
+        Annulé
+      </span>
+    );
+  }
   return (
-    <span
-      className={`px-2.5 md:px-4 py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-wider border shrink-0 ${
-        isActive
-          ? "bg-green-500/10 text-green-500 border-green-500/20"
-          : isCancelled
-            ? "bg-red-500/10 text-red-500 border-red-500/20"
-            : "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
-      }`}
-    >
-      {s === "active" ? "Confirmé" : status}
+    <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 shrink-0">
+      {status || "En attente"}
     </span>
   );
 };
-
-const SubscriptionBadge = () => (
-  <span className="bg-primary/20 text-primary text-[8px] md:text-[9px] px-2 py-0.5 rounded font-black uppercase border border-primary/30 flex items-center gap-1 shrink-0">
-    <span className="material-symbols-outlined text-[10px] md:text-[12px]">
-      autorenew
-    </span>
-    Abonnement
-  </span>
-);
 
 export default CalendarMatch;

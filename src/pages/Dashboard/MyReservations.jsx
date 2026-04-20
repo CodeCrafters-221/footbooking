@@ -655,7 +655,7 @@ const MyReservations = () => {
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-lg">check_circle</span>
-                    Confirmer la réservation
+                    Confirmer 
                   </>
                 )}
               </button>

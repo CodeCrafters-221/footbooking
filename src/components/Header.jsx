@@ -1,14 +1,22 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import mainLogo from "../assets/img/mainLogo.png";
 import { useAuth } from "../context/AuthContext";
-import { Menu as MenuIcon, X as XIcon, User as UserIcon } from "lucide-react";
+import { Menu as MenuIcon, X as XIcon, User as UserIcon, LogOut } from "lucide-react";
+import { supabase } from "../services/supabaseClient";
 
 export default function Header() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const handleLogout = async () => {
+    setIsMenuOpen(false);
+    await supabase.auth.signOut();
+    navigate("/");
+  };
 
   // 👇 Detecter un scroll
   useEffect(() => {
@@ -28,7 +36,7 @@ export default function Header() {
         fixed top-0 left-0 w-full z-50 transition-all duration-300 flex items-center justify-around py-3
         ${
           scrolled
-            ? "bg-background-dark/95 backdrop-blur border-b border-white/5 shadow-lg"
+            ? "bg-background-dark lg:bg-background-dark/95 backdrop-blur-none lg:backdrop-blur border-b border-white/5 shadow-lg"
             : "bg-transparent"
         }
       `}
@@ -211,6 +219,13 @@ export default function Header() {
                   <UserIcon className="w-6 h-6" />
                   {profile?.name || "Compte"}
                 </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full border-2 border-red-500/20 hover:border-red-500/40 text-red-500 hover:text-red-400 hover:bg-red-500/10 font-bold text-lg h-14 rounded-2xl flex items-center justify-center gap-2 transition-all"
+                >
+                  <LogOut className="w-6 h-6" />
+                  Se déconnecter
+                </button>
               </>
             ) : (
               <Link

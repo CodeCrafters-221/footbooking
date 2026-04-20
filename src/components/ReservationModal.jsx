@@ -658,7 +658,7 @@ export default function ReservationModal({
                                 relative py-2.5 rounded-lg text-sm font-bold transition-all border
                                 ${
                                   !slot.available
-                                    ? "bg-background-dark border-surface-highlight text-white/20 cursor-not-allowed overflow-hidden shadow-inner"
+                                    ? "bg-black/20 border-surface-highlight/30 text-white/20 cursor-not-allowed line-through decoration-red-500/50 decoration-2"
                                     : formData.timeSlot === slot.time
                                       ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)] scale-105 z-10"
                                       : "bg-surface-dark text-white border-surface-highlight hover:border-primary/50 hover:bg-surface-light"
@@ -666,12 +666,6 @@ export default function ReservationModal({
                               `}
                             >
                               {slot.time}
-                              {/* Ligne de barrage pour les réservés */}
-                              {!slot.available && (
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                  <div className="w-full h-[1.5px] bg-red-500/40 -rotate-12"></div>
-                                </div>
-                              )}
                             </button>
                           ))}
                         </div>
@@ -760,16 +754,16 @@ export default function ReservationModal({
                             reservationType: "single",
                           }))
                         }
-                        className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all border ${
+                        className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-bold text-[11px] sm:text-sm transition-all border ${
                           formData.reservationType === "single"
                             ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)]"
                             : "bg-surface-dark text-text-secondary border-surface-highlight hover:border-primary/30"
                         }`}
                       >
-                        <span className="material-symbols-outlined text-lg">
+                        <span className="material-symbols-outlined text-[20px] sm:text-lg">
                           calendar_today
                         </span>
-                        Match Unique
+                        <span className="text-center leading-tight">Match Unique</span>
                       </button>
                       <button
                         type="button"
@@ -779,16 +773,16 @@ export default function ReservationModal({
                             reservationType: "subscription",
                           }))
                         }
-                        className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all border ${
+                        className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-bold text-[11px] sm:text-sm transition-all border ${
                           formData.reservationType === "subscription"
                             ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)]"
                             : "bg-surface-dark text-text-secondary border-surface-highlight hover:border-primary/30"
                         }`}
                       >
-                        <span className="material-symbols-outlined text-lg">
+                        <span className="material-symbols-outlined text-[20px] sm:text-lg">
                           autorenew
                         </span>
-                        Abonnement
+                        <span className="text-center leading-tight">Abonnement</span>
                       </button>
                     </div>
 

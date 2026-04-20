@@ -46,19 +46,8 @@ const MyFields = () => {
                   <p className="text-[#cbad90] text-sm">{field.type}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 border-t border-[#493622] pt-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[#f27f0d] text-[20px]">
-                    schedule
-                  </span>
-                  <span className="text-sm text-[#cbad90]">{field.hours}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[#f27f0d] text-[20px]">
-                    attach_money
-                  </span>
-                  <span className="text-sm text-[#cbad90]">{field.price}</span>
-                </div>
+              <div className="flex items-center border-t border-[#493622] pt-4">
+                <span className="text-sm text-[#cbad90]">{field.hours}</span>
               </div>
               <div className="flex gap-3 mt-2">
                 <button

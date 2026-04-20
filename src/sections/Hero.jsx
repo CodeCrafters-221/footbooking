@@ -45,16 +45,16 @@ export default function Hero() {
     <div className="heroSection relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
 
-      <div className={`relative flex flex-col items-center justify-center min-h-[85vh] w-full px-5 py-10 lg:px-40 mt-10 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+      <div className={`relative flex flex-col items-center justify-start lg:justify-center min-h-[70vh] lg:min-h-[85vh] w-full px-5 pt-32 pb-16 lg:px-40 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
         {/* Titre */}
         <h1
-          className={`text-white text-4xl text-center font-black leading-tight tracking-[-0.033em] md:text-5xl lg:text-6xl max-w-3xl mx-auto p-4 mt-4 transition-all duration-700 delay-200 ${isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+          className={`text-white text-4xl text-center font-black leading-tight tracking-[-0.033em] md:text-5xl lg:text-6xl max-w-3xl mx-auto px-2 md:p-4 transition-all duration-700 delay-200 ${isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
         >
           Le Meilleur Terrain.
           <br />
-          <span className="text-primary relative">
+          <span className="text-primary relative mt-1 md:mt-2 block">
             Votre Meilleur Match.
-            <span className="absolute bottom-0 left-0 w-full h-1 bg-primary/30 blur-sm" />
+            <span className="absolute bottom-1 left-0 w-full h-1.5 bg-primary/30 blur-sm" />
           </span>
         </h1>
 

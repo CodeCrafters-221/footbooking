@@ -81,11 +81,10 @@ export default function Register() {
   };
 
 
-  // Classes communes pour les inputs pour garder le code propre
-  const inputClasses = `w-full px-4 py-3 rounded-lg border bg-transparent text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors`;
+  const inputClasses = `w-full px-4 py-3 rounded-xl border bg-background-dark text-white placeholder-text-secondary/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors`;
 
   return (
-    <div className="bg-[#2e2318] rounded-2xl w-xl shadow-2xl border border-l-surface-highlight">
+    <div className="bg-[#2e2318] rounded-2xl w-xl shadow-2xl border border-surface-highlight">
       <div className="p-6 sm:p-8">
         <h2 className="text-white text-2xl font-semibold text-center mb-6">
           S'inscrire
@@ -103,7 +102,7 @@ export default function Register() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className={`${inputClasses} ${errors.email ? "border-red-500" : "border-l-surface-highlight"}`}
+              className={`${inputClasses} ${errors.email ? "border-red-500 ring-red-500 focus:ring-red-500" : "border-surface-highlight"}`}
             />
             {errors.email && (
               <span className="text-red-500 text-xs">{errors.email}</span>
@@ -122,7 +121,7 @@ export default function Register() {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`${inputClasses} ${errors.password ? "border-red-500" : "border-l-surface-highlight"}`}
+                className={`${inputClasses} ${errors.password ? "border-red-500 ring-red-500 focus:ring-red-500" : "border-surface-highlight"}`}
               />
               <button
                 type="button"

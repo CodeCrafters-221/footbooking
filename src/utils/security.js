@@ -19,6 +19,21 @@ export const sanitizeString = (str) => {
 };
 
 /**
+ * Restaure les caractères HTML échappés pour un affichage propre dans React
+ * @param {string} str - La chaîne avec des entités HTML
+ * @returns {string} - La chaîne décodée
+ */
+export const decodeSanitizedString = (str) => {
+  if (typeof str !== "string") return "";
+  return str
+    .replace(/&#039;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&gt;/g, ">")
+    .replace(/&lt;/g, "<")
+    .replace(/&amp;/g, "&");
+};
+
+/**
  * Nettoie un numéro de téléphone (ne garde que les chiffres et le '+')
  * @param {string} phone - Le numéro à nettoyer
  * @returns {string} - Le numéro nettoyé

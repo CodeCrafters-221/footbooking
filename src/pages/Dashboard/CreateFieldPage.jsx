@@ -144,8 +144,8 @@ const CreateFieldPage = () => {
         }
     };
 
-    const inputClasses = "w-full px-4 py-3 rounded-lg border border-[#493622] bg-[#231a10] text-[#cbad90] placeholder-[#5d452b] focus:outline-none focus:border-[#f27f0d] transition-colors";
-    const labelClasses = "text-white text-sm font-medium mb-1 block";
+    const inputClasses = "w-full px-4 py-3.5 rounded-xl border border-[#493622] bg-[#1a1208] text-white placeholder-[#8c735d] shadow-inner focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all";
+    const labelClasses = "text-white text-sm font-bold mb-1.5 block opacity-90";
 
     return (
         <div className="flex flex-col gap-6 md:gap-8 max-w-3xl mx-auto w-full pb-20 px-0 sm:px-4">
@@ -155,9 +155,8 @@ const CreateFieldPage = () => {
 
             <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-4 sm:p-8">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-5 md:gap-6">
-                    {/* Name */}
-                    <div>
-                        <label htmlFor="name" className={labelClasses}>Nom du terrain *</label>
+                    <div className="group">
+                        <label htmlFor="name" className={labelClasses}>Nom du terrain <span className="text-primary">*</span></label>
                         <input
                             type="text"
                             id="name"
@@ -171,9 +170,8 @@ const CreateFieldPage = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-                        {/* Type */}
-                        <div>
-                            <label htmlFor="type" className={labelClasses}>Type de terrain</label>
+                        <div className="group">
+                            <label htmlFor="type" className={labelClasses}>Type de terrain <span className="text-primary">*</span></label>
                             <select
                                 id="type"
                                 name="type"
@@ -189,9 +187,8 @@ const CreateFieldPage = () => {
                             </select>
                         </div>
 
-                        {/* Price */}
-                        <div>
-                            <label htmlFor="price" className={labelClasses}>Prix / Heure (CFA) *</label>
+                        <div className="group">
+                            <label htmlFor="price" className={labelClasses}>Prix / Heure (CFA) <span className="text-primary">*</span></label>
                             <input
                                 type="number"
                                 id="price"
@@ -206,9 +203,8 @@ const CreateFieldPage = () => {
                     </div>
 
 
-                    {/* Location */}
-                    <div>
-                        <label htmlFor="location" className={labelClasses}>Adresse / Localisation *</label>
+                    <div className="group">
+                        <label htmlFor="location" className={labelClasses}>Adresse / Localisation <span className="text-primary">*</span></label>
                         <input
                             type="text"
                             id="location"
@@ -288,9 +284,8 @@ const CreateFieldPage = () => {
                         </div>
                     </div>
 
-                    {/* Description */}
-                    <div>
-                        <label htmlFor="description" className={labelClasses}>Description</label>
+                    <div className="group">
+                        <label htmlFor="description" className={labelClasses}>Description du terrain</label>
                         <textarea
                             id="description"
                             name="description"
@@ -321,10 +316,10 @@ const CreateFieldPage = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
-                                                className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-primary' : 'bg-[#493622]'
+                                                className={`w-11 h-6 rounded-full relative transition-colors duration-300 ease-in-out flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-[#231a10] ${day.enabled ? 'bg-primary' : 'bg-[#493622]'
                                                     }`}
                                             >
-                                                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-4.5' : 'translate-x-0.5'
+                                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-in-out ${day.enabled ? 'translate-x-5' : 'translate-x-0'
                                                     }`} />
                                             </button>
                                         </div>
@@ -341,14 +336,14 @@ const CreateFieldPage = () => {
                                                 type="time"
                                                 value={day.start_time}
                                                 onChange={(e) => updateScheduleDay(index, 'start_time', e.target.value)}
-                                                className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold"
+                                                className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold [color-scheme:dark]"
                                             />
                                             <span className="text-primary text-xs font-black">→</span>
                                             <input
                                                 type="time"
                                                 value={day.end_time}
                                                 onChange={(e) => updateScheduleDay(index, 'end_time', e.target.value)}
-                                                className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold"
+                                                className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold [color-scheme:dark]"
                                             />
                                         </div>
                                     )}

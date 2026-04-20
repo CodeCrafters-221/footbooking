@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import Avis, { ReviewModal } from "../sections/profile/Avis";
 import Parametre from "../sections/profile/Parametre";
 import { ReservationService } from "../services/ReservationService";
+import { TerrainService } from "../services/TerrainService";
 import { generateTicket } from "../utils/ticketGenerator";
 import {
   MapPin,
@@ -17,8 +18,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Heart,
 } from "lucide-react";
 import Header from "../components/Header";
+import ReservationModal from "../components/ReservationModal";
+import { useFavorites } from "../hooks/useFavorites";
 
 const UserProfile = () => {
   const { user, loading: authLoading, profile } = useAuth();
@@ -28,6 +32,10 @@ const UserProfile = () => {
     useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [refreshReviewsCounter, setRefreshReviewsCounter] = useState(0);
+  const { favorites, toggleFavorite } = useFavorites();
+
+  const [selectedFavForReservation, setSelectedFavForReservation] = useState(null);
+  const [isFavReservationOpen, setIsFavReservationOpen] = useState(false);
 
   // États pour la pagination des réservations
   const [upcomingPage, setUpcomingPage] = useState(1);
@@ -35,8 +43,12 @@ const UserProfile = () => {
   const [reservationsPerPage, setReservationsPerPage] = useState(
     window.innerWidth < 768 ? 1 : 2,
   );
+  const [favoritesPage, setFavoritesPage] = useState(1);
+  const [favoritesPerPage, setFavoritesPerPage] = useState(
+    window.innerWidth < 768 ? 1 : (window.innerWidth < 1024 ? 2 : 3)
+  );
 
-  // Gérer la réactivité du nombre de réservations par page
+  // Gérer la réactivité du nombre d'éléments par page
   useEffect(() => {
     const handleResize = () => {
       const newPerPage = window.innerWidth < 768 ? 1 : 2;
@@ -45,10 +57,15 @@ const UserProfile = () => {
         setUpcomingPage(1);
         setPastPage(1);
       }
+      const newFavPerPage = window.innerWidth < 768 ? 1 : (window.innerWidth < 1024 ? 2 : 3);
+      if (newFavPerPage !== favoritesPerPage) {
+        setFavoritesPerPage(newFavPerPage);
+        setFavoritesPage(1);
+      }
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [reservationsPerPage]);
+  }, [reservationsPerPage, favoritesPerPage]);
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -128,6 +145,14 @@ const UserProfile = () => {
     pastPage * reservationsPerPage,
   );
 
+  const totalFavoritesPages = Math.ceil(
+    favorites.length / favoritesPerPage,
+  );
+  const paginatedFavorites = favorites.slice(
+    (favoritesPage - 1) * favoritesPerPage,
+    favoritesPage * favoritesPerPage,
+  );
+
   return (
     <div className="bg-[#231a10] min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-white selection:bg-primary selection:text-white font-display pt-22">
       <Header />
@@ -190,6 +215,17 @@ const UserProfile = () => {
                 <CalendarCheck className="w-5 h-5" />
                 <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">
                   Mes Réservations
+                </p>
+              </div>
+            </a>
+            <a
+              className="flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-surface-highlight text-text-secondary hover:text-white pb-3 px-2 min-w-fit cursor-pointer transition-all snap-start"
+              href="#favoris"
+            >
+              <div className="flex items-center gap-2">
+                <Heart className="w-5 h-5" />
+                <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">
+                  Mes Favoris
                 </p>
               </div>
             </a>
@@ -465,11 +501,127 @@ const UserProfile = () => {
             )}
           </div>
 
-          <div id="avis" className="animate-fade-in-up">
+          {/* SECTION: Favoris */}
+          <div id="favoris" className="animate-fade-in-up mt-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-white text-2xl font-bold leading-tight tracking-tight">
+                Mes Terrains Favoris
+              </h2>
+              <span className="bg-surface-highlight/50 px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-wider">
+                {favorites.length} favoris
+              </span>
+            </div>
+            
+            {favorites.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {paginatedFavorites.map((fav) => (
+                    <div key={fav.id} className="bg-surface-dark border border-surface-highlight rounded-2xl overflow-hidden shadow-lg group relative flex flex-col hover:border-primary/50 transition-colors">
+                      <div className="aspect-video bg-cover bg-center relative" style={{ backgroundImage: `url(${fav.image})` }}>
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500" />
+                        <button 
+                          onClick={() => toggleFavorite({ id: fav.id })} 
+                          className="absolute top-3 right-3 p-2 bg-black/50 backdrop-blur-md rounded-full text-primary hover:bg-black/80 transition-all z-10 hover:scale-110 active:scale-95"
+                        >
+                          <Heart className="w-5 h-5 fill-primary" />
+                        </button>
+                      </div>
+                      <div className="p-4 flex flex-col gap-2 flex-grow">
+                        <h3 className="text-white font-bold text-lg leading-tight truncate group-hover:text-primary transition-colors">{fav.name}</h3>
+                        <div className="flex items-center gap-1.5 text-text-secondary text-sm">
+                          <MapPin className="w-[18px] h-[18px] text-primary shrink-0" />
+                          <span className="truncate">{fav.adress}</span>
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            let terrainToReserve = fav;
+                            if (!fav.price || fav.price === 0) {
+                              try {
+                                const full = await TerrainService.getTerrainById(fav.id);
+                                terrainToReserve = {
+                                  ...full,
+                                  city: full.name,
+                                  location: full.adress,
+                                  price: full.price_per_hour || full.price || 0,
+                                  totalPlayers: full.pelouse,
+                                  fieldStadium: full.pelouse,
+                                  proprietaire_id: full.proprietaire_id,
+                                };
+                                toggleFavorite(full);
+                              } catch (e) {
+                                console.error("Erreur de récupération du terrain", e);
+                              }
+                            }
+                            setSelectedFavForReservation(terrainToReserve);
+                            setIsFavReservationOpen(true);
+                          }}
+                          className="mt-4 w-full text-center py-3 bg-surface-highlight/50 text-white text-sm font-bold rounded-xl hover:bg-primary hover:text-black transition-all shadow-md"
+                        >
+                          Réserver à nouveau
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {totalFavoritesPages > 1 && (
+                  <div className="flex justify-center items-center gap-6 mt-6">
+                    <button
+                      onClick={() => setFavoritesPage((p) => Math.max(1, p - 1))}
+                      disabled={favoritesPage === 1}
+                      className="size-12 rounded-xl border border-surface-highlight bg-background-dark text-white flex items-center justify-center hover:border-primary disabled:opacity-30 transition-all shadow-lg"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-primary font-black text-lg">
+                        {favoritesPage}
+                      </span>
+                      <span className="text-[#cbad90] font-bold text-xs uppercase tracking-widest">
+                        / {totalFavoritesPages}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        setFavoritesPage((p) => Math.min(totalFavoritesPages, p + 1))
+                      }
+                      disabled={favoritesPage === totalFavoritesPages}
+                      className="size-12 rounded-xl border border-surface-highlight bg-background-dark text-white flex items-center justify-center hover:border-primary disabled:opacity-30 transition-all shadow-lg"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="col-span-full bg-surface-dark/30 rounded-3xl p-12 lg:p-16 border border-dashed border-surface-highlight flex flex-col items-center justify-center text-center">
+                <Heart className="w-12 h-12 text-surface-highlight opacity-40 mb-4" />
+                <h3 className="text-white font-bold text-lg mb-2">Aucun terrain en favori</h3>
+                <p className="text-text-secondary text-sm max-w-sm">
+                  Sauvegardez les terrains que vous aimez pour les retrouver facilement ici pour vos prochaines réservations.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div id="avis" className="animate-fade-in-up mt-4">
             <Avis key={refreshReviewsCounter} />
           </div>
         </div>
       </main>
+
+      {isFavReservationOpen && selectedFavForReservation && (
+        <ReservationModal
+          isOpen={isFavReservationOpen}
+          onClose={() => {
+            setIsFavReservationOpen(false);
+            setSelectedFavForReservation(null);
+          }}
+          stadium={selectedFavForReservation}
+        />
+      )}
 
       {selectedTerrainForReview && (
         <ReviewModal

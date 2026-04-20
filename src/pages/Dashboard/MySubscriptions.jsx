@@ -728,7 +728,7 @@ const MySubscriptions = () => {
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-lg">check_circle</span>
-                    Confirmer l'abonnement
+                    Confirmer
                   </>
                 )}
               </button>
@@ -785,7 +785,7 @@ const ActionButtons = ({
       <button
         onClick={() => onStatusChange(booking.id, "Confirmé")}
         className="size-8 flex items-center justify-center rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 transition-all shadow-lg border border-green-500/30"
-        title="Confirmer l'abonnement"
+        title="Confirmer"
       >
         <span className="material-symbols-outlined text-[18px] md:text-[20px]">
           check_circle

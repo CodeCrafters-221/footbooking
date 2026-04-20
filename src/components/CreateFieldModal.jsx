@@ -304,7 +304,7 @@ const CreateFieldModal = () => {
 
             {/* ═══ SECTION GALERIE PHOTOS ═══ */}
             <div className="border-t border-surface-highlight pt-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
                 <div>
                   <h3 className="text-white text-lg font-bold mb-1">
                     📸 Galerie Photos
@@ -390,58 +390,58 @@ const CreateFieldModal = () => {
                 {schedule.map((day, index) => (
                   <div
                     key={day.day_of_week}
-                    className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border transition-all ${
+                    className={`flex flex-col xs:flex-row xs:items-center gap-3 p-3 rounded-2xl border transition-all ${
                       day.enabled
-                        ? "bg-background-dark border-primary-new/40"
-                        : "bg-background-dark/50 border-surface-highlight/50 opacity-60"
+                        ? "bg-[#231a10] border-primary/40"
+                        : "bg-[#231a10]/50 border-[#493622]/50 opacity-60"
                     }`}
                   >
-                    {/* Checkbox */}
-                    <div className="flex items-center justify-center w-6 sm:w-10 shrink-0">
-                      <input
-                        type="checkbox"
-                        checked={day.enabled}
-                        onChange={(e) =>
-                          updateScheduleDay(index, "enabled", e.target.checked)
-                        }
-                        className="w-4 h-4 sm:w-5 sm:h-5 rounded border-surface-highlight text-primary-new focus:ring-primary-new cursor-pointer accent-primary-new bg-surface-dark"
-                      />
+                    <div className="flex items-center justify-between xs:justify-start gap-4">
+                      <div className="flex items-center justify-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateScheduleDay(index, "enabled", !day.enabled)
+                          }
+                          className={`w-11 h-6 rounded-full relative transition-colors duration-300 ease-in-out flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-[#231a10] ${
+                            day.enabled ? "bg-primary" : "bg-[#493622]"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-in-out ${
+                              day.enabled ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      <span
+                        className={`text-sm font-bold xs:w-20 shrink-0 ${
+                          day.enabled ? "text-white" : "text-[#5d452b]"
+                        }`}
+                      >
+                        {day.label}
+                      </span>
                     </div>
 
-                    {/* Day name */}
-                    <span
-                      className={`text-[11px] sm:text-sm font-semibold w-16 sm:w-20 shrink-0 ${
-                        day.enabled ? "text-white" : "text-text-secondary"
-                      }`}
-                    >
-                      {day.label}
-                    </span>
-
-                    {/* Time inputs */}
                     {day.enabled && (
-                      <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
+                      <div className="flex items-center gap-2 flex-1 justify-end">
                         <input
                           type="time"
                           value={day.start_time}
                           onChange={(e) =>
-                            updateScheduleDay(
-                              index,
-                              "start_time",
-                              e.target.value,
-                            )
+                            updateScheduleDay(index, "start_time", e.target.value)
                           }
-                          className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-surface-dark text-white text-[11px] sm:text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-[68px] sm:w-28 text-center"
+                          className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold [color-scheme:dark]"
                         />
-                        <span className="text-text-secondary text-[10px] sm:text-xs">
-                          à
-                        </span>
+                        <span className="text-primary text-xs font-black">→</span>
                         <input
                           type="time"
                           value={day.end_time}
                           onChange={(e) =>
                             updateScheduleDay(index, "end_time", e.target.value)
                           }
-                          className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-surface-dark text-white text-[11px] sm:text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-[68px] sm:w-28 text-center"
+                          className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold [color-scheme:dark]"
                         />
                       </div>
                     )}
