@@ -31,16 +31,16 @@ export function useFavorites() {
         // Keep a representation of the terrain that maps perfectly to ReservationModal's expected stadium prop
         const lightTerrain = {
           id: terrain.id,
-          name: terrain.name,
-          adress: terrain.adress,
-          city: terrain.name,
-          location: terrain.adress,
+          name: terrain.name || terrain.city,
+          adress: terrain.adress || terrain.location,
+          city: terrain.name || terrain.city,
+          location: terrain.adress || terrain.location,
           price: terrain.price_per_hour || terrain.price || 0,
-          totalPlayers: terrain.pelouse,
-          fieldStadium: terrain.pelouse,
-          notes: "4.8",
+          totalPlayers: terrain.type || terrain.totalPlayers || "5 vs 5",
+          fieldStadium: terrain.pelouse || terrain.fieldStadium || "Synthétique",
+          notes: terrain.ratingStats?.average?.toString() || terrain.notes?.toString() || "N/A",
           proprietaire_id: terrain.proprietaire_id,
-          image: terrain.field_images?.[0]?.url_image || "https://placehold.co/600x400?text=No+Image"
+          image: terrain.image || terrain.field_images?.[0]?.url_image || "https://placehold.co/600x400?text=No+Image"
         };
         updated = [...prev, lightTerrain];
       }

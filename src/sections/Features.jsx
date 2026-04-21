@@ -12,10 +12,13 @@ const thirdStadiumCard = "https://placehold.co/600x400/222222/FFFFFF?text=Terrai
 
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
+import { useFavorites } from "../hooks/useFavorites";
+import { useAuth } from "../context/AuthContext";
 
 export default function Features() {
   const [searchParams] = useSearchParams();
-  const [favorites, setFavorites] = useState([]);
+  const { user } = useAuth();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [stadiums, setStadiums] = useState([]);
   const [filteredStadiums, setFilteredStadiums] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -138,16 +141,20 @@ export default function Features() {
   };
 
   const handleFavorite = (stadiumId) => {
-    setFavorites((prev) => {
-      const isFav = prev.includes(stadiumId);
-      if (isFav) {
-        toast.info("Terrain retiré des favoris.");
-        return prev.filter((id) => id !== stadiumId);
-      } else {
+    if (!user) {
+      toast.info("Veuillez vous connecter pour sauvegarder ce terrain.");
+      return;
+    }
+    const stadium = stadiums.find((s) => s.id === stadiumId);
+    if(stadium) {
+      const isSaved = isFavorite(stadiumId);
+      toggleFavorite(stadium);
+      if (!isSaved) {
         toast.success("Terrain ajouté aux favoris !");
-        return [...prev, stadiumId];
+      } else {
+        toast.info("Terrain retiré des favoris.");
       }
-    });
+    }
   };
 
   return (
@@ -199,7 +206,7 @@ export default function Features() {
                     image={stadium.image}
                     onReserve={handleReserve}
                     onFavorite={handleFavorite}
-                    isFavorite={favorites.includes(stadium.id)}
+                    isFavorite={isFavorite(stadium.id)}
                     isPlaceholder={stadium.id.toString().startsWith('p')}
                   />
                 </div>
