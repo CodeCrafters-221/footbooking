@@ -1,5 +1,6 @@
 import { SearchX, Zap, Heart, MapPin, Star, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import FadeIn from "../../components/FadeIn";
 
 const CardSearch = ({ terrains, onReserve, onFavorite, favorites = [] }) => {
   if (terrains.length === 0) {
@@ -20,10 +21,10 @@ const CardSearch = ({ terrains, onReserve, onFavorite, favorites = [] }) => {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {terrains.map((terrain) => (
+        {terrains.map((terrain, index) => (
+          <FadeIn key={terrain.id} delay={(index % 3) * 0.1}>
           <div
-            key={terrain.id}
-            className="group bg-surface-dark border border-surface-highlight rounded-2xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1 flex flex-col relative"
+            className="group bg-surface-dark border border-surface-highlight rounded-2xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1 flex flex-col relative h-full"
           >
             {/* Image Container */}
             <Link
@@ -118,6 +119,7 @@ const CardSearch = ({ terrains, onReserve, onFavorite, favorites = [] }) => {
               </div>
             </div>
           </div>
+          </FadeIn>
         ))}
       </div>
     </>

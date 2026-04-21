@@ -7,6 +7,7 @@ import {
   PartyPopper,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import heroBg from "../assets/img/hero-bg.jpg";
 
 const stats = [
   {
@@ -42,10 +43,16 @@ export default function Hero() {
   const badgeClasse = "inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
 
   return (
-    <div className="heroSection relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+    <div 
+      className="heroSection relative overflow-hidden bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${heroBg})` }}
+    >
+      {/* Superpositions dégradées pour faire ressortir le texte */}
+      <div className="absolute inset-0 bg-black/40 z-0" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/60 to-transparent z-0 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background-dark/80 via-transparent to-transparent z-0 pointer-events-none" />
 
-      <div className={`relative flex flex-col items-center justify-start lg:justify-center min-h-[70vh] lg:min-h-[85vh] w-full px-5 pt-32 pb-16 lg:px-40 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+      <div className={`relative z-10 flex flex-col items-center justify-start lg:justify-center min-h-[70vh] lg:min-h-[85vh] w-full px-5 pt-32 pb-16 lg:px-40 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
         {/* Titre */}
         <h1
           className={`text-white text-4xl text-center font-black leading-tight tracking-[-0.033em] md:text-5xl lg:text-6xl max-w-3xl mx-auto px-2 md:p-4 transition-all duration-700 delay-200 ${isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}

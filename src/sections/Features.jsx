@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import StadiumCard from "../components/StadiumCard";
 import ReservationModal from "../components/ReservationModal";
 import Cta2 from "../components/Cta2";
+import FadeIn from "../components/FadeIn";
 
 // Fallbacks for images that missing in the branch
 const firstStadiumCard = "https://placehold.co/600x400/222222/FFFFFF?text=Terrain+1";
@@ -155,50 +156,54 @@ export default function Features() {
         id="stadiums-list"
         className="featuresSection container mx-auto px-4 py-8 scroll-mt-24"
       >
-        <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 px-2">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">
-              {searchParams.get("q") || searchParams.get("city")
-                ? `Résultats de recherche (${filteredStadiums.length})`
-                : "Terrains à la une"}
-            </h2>
-            <p className="text-gray-400 mt-2">
-              {searchParams.get("q") || searchParams.get("city")
-                ? "Voici les terrains correspondant à vos critères"
-                : "Les terrains les plus populaires de la semaine"}
-            </p>
-          </div>
+        <FadeIn>
+          <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 px-2">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">
+                {searchParams.get("q") || searchParams.get("city")
+                  ? `Résultats de recherche (${filteredStadiums.length})`
+                  : "Terrains à la une"}
+              </h2>
+              <p className="text-gray-400 mt-2">
+                {searchParams.get("q") || searchParams.get("city")
+                  ? "Voici les terrains correspondant à vos critères"
+                  : "Les terrains les plus populaires de la semaine"}
+              </p>
+            </div>
 
-          {(searchParams.get("q") || searchParams.get("city")) && (
-            <Link
-              to="/"
-              className="text-primary hover:underline text-sm font-semibold"
-            >
-              Tout afficher
-            </Link>
-          )}
-        </div>
+            {(searchParams.get("q") || searchParams.get("city")) && (
+              <Link
+                to="/"
+                className="text-primary hover:underline text-sm font-semibold"
+              >
+                Tout afficher
+              </Link>
+            )}
+          </div>
+        </FadeIn>
 
         {/* LISTE FILTRÉE */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStadiums.length > 0 ? (
-            filteredStadiums.map((stadium) => (
-              <div key={stadium.id} className="relative group h-full">
-                <StadiumCard
-                  id={stadium.id}
-                  city={stadium.city}
-                  price={stadium.price}
-                  location={stadium.location}
-                  totalPlayers={stadium.totalPlayers}
-                  fieldStadium={stadium.fieldStadium}
-                  notes={stadium.notes}
-                  image={stadium.image}
-                  onReserve={handleReserve}
-                  onFavorite={handleFavorite}
-                  isFavorite={favorites.includes(stadium.id)}
-                  isPlaceholder={stadium.id.toString().startsWith('p')}
-                />
-              </div>
+            filteredStadiums.map((stadium, index) => (
+              <FadeIn key={stadium.id} delay={(index % 3) * 0.15}>
+                <div className="relative group h-full">
+                  <StadiumCard
+                    id={stadium.id}
+                    city={stadium.city}
+                    price={stadium.price}
+                    location={stadium.location}
+                    totalPlayers={stadium.totalPlayers}
+                    fieldStadium={stadium.fieldStadium}
+                    notes={stadium.notes}
+                    image={stadium.image}
+                    onReserve={handleReserve}
+                    onFavorite={handleFavorite}
+                    isFavorite={favorites.includes(stadium.id)}
+                    isPlaceholder={stadium.id.toString().startsWith('p')}
+                  />
+                </div>
+              </FadeIn>
             ))
 
 
@@ -220,9 +225,11 @@ export default function Features() {
           )}
         </div>
 
-        <div className="mt-16">
-          <Cta2 />
-        </div>
+        <FadeIn delay={0.2}>
+          <div className="mt-16">
+            <Cta2 />
+          </div>
+        </FadeIn>
 
         {/* --- MODAL DE RÉSERVATION --- */}
         {/* Plus besoin de passer onLogin ou onRegister car le modal utilise navigate() maintenant */}

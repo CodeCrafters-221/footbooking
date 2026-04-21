@@ -74,3 +74,17 @@ body::-webkit-scrollbar,
 #root::-webkit-scrollbar {
   display: none;
 }
+
+/* Animations ----------------------------------- */
+.hover-scale {
+  @apply transition-transform duration-300 ease-out hover:scale-[1.02] active:scale-[0.98];
+}
+
+.hover-glow {
+  @apply transition-all duration-300 hover:shadow-[0_0_20px_rgba(242,127,13,0.3)] hover:border-primary/50;
+}
+
+.card-hover {
+  @apply hover-scale hover-glow;
+}
+

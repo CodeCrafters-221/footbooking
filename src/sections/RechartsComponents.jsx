@@ -122,16 +122,25 @@ export const RechartsBarChartStats = ({ data = [], isLoading }) => {
 
   return (
     <ResponsiveContainer width="100%" height={320}>
-      <BarChart data={data}>
+      <BarChart data={data} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#3a2d1d" />
 
         <XAxis
           dataKey="hour"
           tick={{ fill: "#cbad90", fontSize: 11 }}
           axisLine={false}
+          minTickGap={10}
         />
 
-        <YAxis tick={{ fill: "#cbad90", fontSize: 11 }} axisLine={false} />
+        <YAxis 
+          tickFormatter={(value) => {
+            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+            if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+            return value;
+          }}
+          tick={{ fill: "#cbad90", fontSize: 11 }} 
+          axisLine={false} 
+        />
 
         <Tooltip content={<CustomTooltip />} />
 
@@ -154,35 +163,44 @@ export const RechartsAreaChart = ({ data = [], isLoading }) => {
 
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <AreaChart data={data}>
+      <AreaChart data={data} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
         <defs>
           <linearGradient id="colorSingle" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#f27f0d" stopOpacity={0.4} />
-            <stop offset="95%" stopColor="#f27f0d" stopOpacity={0} />
+            <stop offset="0%" stopColor="#f27f0d" stopOpacity={0.6} />
+            <stop offset="100%" stopColor="#f27f0d" stopOpacity={0} />
           </linearGradient>
 
           <linearGradient id="colorSub" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.6} />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
           </linearGradient>
         </defs>
 
-        <CartesianGrid strokeDasharray="3 3" stroke="#3a2d1d" />
+        {/* Removed CartesianGrid for a cleaner "Apple/Stripe" look */}
 
         <XAxis
           dataKey="name"
-          tick={{ fill: "#cbad90", fontSize: 11 }}
+          tick={{ fill: "#cbad90", fontSize: 12, fontWeight: 500 }}
           axisLine={false}
+          tickLine={false}
+          minTickGap={15}
+          dy={10}
         />
 
-        <YAxis tick={{ fill: "#cbad90", fontSize: 11 }} axisLine={false} />
+        {/* HIDDEN Y-AXIS to save 100% of horizontal space for mobile */}
+        <YAxis hide={true} domain={['dataMin', 'dataMax * 1.05']} />
 
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip 
+          content={<CustomTooltip />} 
+          cursor={{ stroke: '#cbad90', strokeWidth: 1, strokeDasharray: '4 4' }} 
+        />
+        
         <Legend 
           layout="horizontal" 
-          align="top" 
+          align="center" 
           verticalAlign="top" 
-          wrapperStyle={{ paddingBottom: '20px' }}
+          wrapperStyle={{ paddingBottom: '30px' }}
+          iconType="circle"
         />
 
         <Area
@@ -191,18 +209,20 @@ export const RechartsAreaChart = ({ data = [], isLoading }) => {
           name="Match Unique"
           stroke="#f27f0d"
           fill="url(#colorSingle)"
-          strokeWidth={3}
-          animationDuration={900}
+          strokeWidth={4} // Thicker sleek lines
+          animationDuration={1200}
+          activeDot={{ r: 6, fill: '#f27f0d', stroke: '#fff', strokeWidth: 2 }}
         />
 
         <Area
           type="monotone"
           dataKey="abonnement"
-          name="abonnement"
+          name="Abonnement"
           stroke="#3b82f6"
           fill="url(#colorSub)"
-          strokeWidth={3}
-          animationDuration={900}
+          strokeWidth={4}
+          animationDuration={1200}
+          activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
         />
       </AreaChart>
     </ResponsiveContainer>
