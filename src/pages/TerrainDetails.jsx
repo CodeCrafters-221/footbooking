@@ -139,9 +139,9 @@ export default function TerrainDetails() {
     city: terrain.name,
     price: basePrice,
     location: terrain.adress,
-    totalPlayers: terrain.pelouse,
+    totalPlayers: terrain.type,
     fieldStadium: terrain.pelouse,
-    notes: "4.8",
+    notes: ratingStats?.average?.toString() || "N/A",
     image:
       terrain.field_images?.[0]?.url_image ||
       "https://placehold.co/600x400?text=No+Image",
