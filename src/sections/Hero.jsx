@@ -8,27 +8,27 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroBg from "../assets/img/hero-bg.jpg";
-
-const stats = [
-  {
-    icon: <LandPlot className="w-8 h-8 text-primary" />,
-    value: "50+",
-    label: "Terrains disponibles",
-  },
-  {
-    icon: <Users className="w-8 h-8 text-primary" />,
-    value: "2000+",
-    label: "Joueurs actifs",
-  },
-  {
-    icon: <CalendarCheck className="w-8 h-8 text-primary" />,
-    value: "500+",
-    label: "Réservations par mois",
-  },
-];
+import { supabase } from "../services/supabaseClient";
 
 export default function Hero() {
   const [isVisible, setIsVisible] = useState(false);
+  const [dynamicStats, setDynamicStats] = useState([
+    {
+      icon: <LandPlot className="w-8 h-8 text-primary" />,
+      value: "...",
+      label: "Terrains disponibles",
+    },
+    {
+      icon: <Users className="w-8 h-8 text-primary" />,
+      value: "...",
+      label: "Joueurs actifs",
+    },
+    {
+      icon: <CalendarCheck className="w-8 h-8 text-primary" />,
+      value: "...",
+      label: "Réservations totales",
+    },
+  ]);
 
   const { user: currentUser, profile } = useAuth();
 
@@ -36,6 +36,54 @@ export default function Hero() {
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, 100);
+
+    const fetchDynamicStats = async () => {
+      try {
+        // Tentative d'utiliser une fonction RPC sécurisée pour contourner le RLS
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_platform_stats');
+
+        let fieldsCount = 0;
+        let usersCount = 0;
+        let reservationsCount = 0;
+
+        if (!rpcError && rpcData) {
+          fieldsCount = rpcData.terrains;
+          usersCount = rpcData.joueurs;
+          reservationsCount = rpcData.reservations;
+        } else {
+          // Fallback direct (qui renverra 0 si bloqué par le RLS)
+          const { count: fCount } = await supabase.from("fields").select("*", { count: "exact", head: true });
+          const { count: uCount } = await supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "client");
+          const { count: rCount } = await supabase.from("reservations").select("*", { count: "exact", head: true });
+          
+          fieldsCount = fCount || 0;
+          usersCount = uCount || 0;
+          reservationsCount = rCount || 0;
+        }
+
+        setDynamicStats([
+          {
+            icon: <LandPlot className="w-8 h-8 text-primary" />,
+            value: fieldsCount ? `${fieldsCount}` : "0",
+            label: "Terrains disponibles",
+          },
+          {
+            icon: <Users className="w-8 h-8 text-primary" />,
+            value: usersCount ? `${usersCount}` : "0",
+            label: "Joueurs actifs",
+          },
+          {
+            icon: <CalendarCheck className="w-8 h-8 text-primary" />,
+            value: reservationsCount ? `${reservationsCount}` : "0",
+            label: "Réservations totales",
+          },
+        ]);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des statistiques:", error);
+      }
+    };
+
+    fetchDynamicStats();
 
     return () => clearTimeout(timer);
   }, []);
@@ -79,7 +127,7 @@ export default function Hero() {
         </Link>
 
         {/* Statistiques */}
-        <HeroStats stats={stats} />
+        <HeroStats stats={dynamicStats} />
       </div>
     </div>
   );

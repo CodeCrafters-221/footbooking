@@ -5,10 +5,10 @@ import ReservationModal from "../components/ReservationModal";
 import Cta2 from "../components/Cta2";
 import FadeIn from "../components/FadeIn";
 
-// Fallbacks for images that missing in the branch
-const firstStadiumCard = "https://placehold.co/600x400/222222/FFFFFF?text=Terrain+1";
-const secondStadiumCard = "https://placehold.co/600x400/222222/FFFFFF?text=Terrain+2";
-const thirdStadiumCard = "https://placehold.co/600x400/222222/FFFFFF?text=Terrain+3";
+// Images
+import firstStadiumCard from "../assets/img/field1.jpg";
+import secondStadiumCard from "../assets/img/field2.jpg";
+import thirdStadiumCard from "../assets/img/field3.jpg";
 
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
@@ -49,8 +49,8 @@ export default function Features() {
             city: f.name,
             price: f.price_per_hour || f.price || 0,
             location: f.adress,
-            totalPlayers: "5 vs 5",
-            fieldStadium: f.pelouse || "Synthétique",
+            totalPlayers: f.nombre_de_joueurs,
+            fieldStadium: f.pelouse,
             notes: "4.8",
             image: f.field_images?.[0]?.url_image || firstStadiumCard,
             proprietaire_id: f.proprietaire_id
@@ -65,8 +65,8 @@ export default function Features() {
               city: "Terrain Mermoz Pro",
               price: 25000,
               location: "Dakar, Mermoz",
-              totalPlayers: "5 vs 5",
-              fieldStadium: "Synthétique",
+              totalPlayers: "",
+              fieldStadium: "Terrain Synthétique",
               notes: "4.9",
               image: secondStadiumCard
             },
@@ -75,8 +75,8 @@ export default function Features() {
               city: "Galaxy Foot",
               price: 30000,
               location: "Dakar, Almadies",
-              totalPlayers: "7 vs 7",
-              fieldStadium: "Gazon Naturel",
+              totalPlayers: "",
+              fieldStadium: "Terrain Synthétique",
               notes: "4.7",
               image: thirdStadiumCard
             },
@@ -85,8 +85,8 @@ export default function Features() {
               city: "Almadies Turf",
               price: 20000,
               location: "Dakar, Ngor",
-              totalPlayers: "5 vs 5",
-              fieldStadium: "Synthétique",
+              totalPlayers: "",
+              fieldStadium: "Terrain Synthétique",
               notes: "4.6",
               image: firstStadiumCard
             }

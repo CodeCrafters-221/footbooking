@@ -100,8 +100,8 @@ export default function StadiumCard({
         {/* Badges */}
         <div className="card-details flex flex-wrap gap-2 items-center justify-between mt-auto pt-2">
           <div className="flex gap-2">
-            <Badge label={totalPlayers} />
-            <Badge label={fieldStadium} />
+            {totalPlayers && totalPlayers.trim() !== "" && <Badge label={totalPlayers} />}
+            {fieldStadium && fieldStadium.trim() !== "" && <Badge label={fieldStadium} />}
           </div>
           <RatingBadge rating={notes} />
         </div>

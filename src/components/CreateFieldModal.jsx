@@ -14,7 +14,7 @@ const initialFormState = {
   hours: "08:00 - 00:00",
   images: [], // Changed from image to images array
 };
-
+  
 const CreateFieldModal = () => {
   const { addField, closeCreateModal, isCreateModalOpen } = useDashboard();
   const fileInputRef = React.useRef(null);
