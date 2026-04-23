@@ -7,6 +7,7 @@ import ReservationModal from "../components/ReservationModal";
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
 import Header from "../components/Header";
+import SEO from "../components/SEO";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -138,6 +139,11 @@ const SearchPage = () => {
 
   return (
     <div className="bg-background-dark text-white min-h-screen flex flex-col overflow-x-hidden font-display">
+      <SEO 
+        title="Rechercher des Terrains" 
+        description="Recherchez parmi de nombreux terrains de sport disponibles à la réservation. Filtrez par date, lieu, et prix."
+        url="https://footbooking.online/search"
+      />
       {/* Main Layout */}
       <Header />
       <div className="flex flex-1 max-w-[1440px] mx-auto w-full pt-32 pb-10 px-4 sm:px-6 lg:px-8">

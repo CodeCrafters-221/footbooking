@@ -4,6 +4,7 @@ import ReservationModal from "../components/ReservationModal";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { decodeSanitizedString } from "../utils/security";
+import SEO from "../components/SEO";
 import {
   useAvailability,
   useTerrainData,
@@ -149,6 +150,11 @@ export default function TerrainDetails() {
   };
   return (
     <div className="bg-background-dark relative text-white font-display antialiased overflow-x-hidden selection:bg-primary selection:text-white min-h-screen pb-20">
+      <SEO 
+        title={`Réserver ${terrain.name}`}
+        description={`Réservez ${terrain.name} à ${terrain.adress}. ${terrain.description ? terrain.description.substring(0, 150) + '...' : 'Trouvez et réservez facilement des terrains de sport près de chez vous.'}`}
+        url={`https://footbooking.online/terrain-details/${id}`}
+      />
       {/* Main Content */}
       <main className="w-full max-w-7xl mx-auto px-4 md:px-10 py-6 pb-20">
         {/* Header Info */}
