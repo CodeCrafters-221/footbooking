@@ -8,6 +8,10 @@ export default function OwnerRedirect({ children }) {
         return null; // Ou un spinner
     }
 
+    if (profile?.role === "super_admin") {
+        return <Navigate to="/admin" replace />;
+    }
+
     if (profile?.role === "owner") {
         return <Navigate to="/dashboard" replace />;
     }

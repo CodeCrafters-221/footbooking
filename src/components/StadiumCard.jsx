@@ -15,6 +15,7 @@ export default function StadiumCard({
   onFavorite,
   isFavorite = false,
   isPlaceholder = false,
+  fieldSource = "owner",
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,6 +25,10 @@ export default function StadiumCard({
     if (e && e.stopPropagation) e.stopPropagation();
     if (isPlaceholder) {
       navigate("/search");
+      return;
+    }
+    if (fieldSource === "admin") {
+      navigate(`/terrain-details/${id}`);
       return;
     }
     setIsLoading(true);
@@ -59,6 +64,11 @@ export default function StadiumCard({
       className={`w-full h-full flex flex-col bg-[#2e2318] rounded-2xl overflow-hidden shadow-lg border border-[#493622] transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/20 cursor-pointer`}>
       {/* Image Container */}
       <figure className="relative h-44 sm:h-48 flex-shrink-0 group overflow-hidden">
+        {fieldSource === "admin" && (
+          <div className="absolute top-3 left-3 bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 uppercase tracking-widest shadow-md backdrop-blur-md">
+            Non partenaire
+          </div>
+        )}
         <img
           src={image}
           alt={`Terrain ${city}`}
@@ -86,8 +96,14 @@ export default function StadiumCard({
             {city}
           </h3>
           <div className="text-right shrink-0">
-            <span className="text-primary font-bold ">{price} CFA</span>
-            <span className="text-white text-xs font-normal">/h</span>
+            {fieldSource === "admin" ? (
+              <span className="text-primary font-bold text-sm">Prix sur demande</span>
+            ) : (
+              <>
+                <span className="text-primary font-bold ">{price} CFA</span>
+                <span className="text-white text-xs font-normal">/h</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -115,6 +131,8 @@ export default function StadiumCard({
           disabled={isLoading}
           className={`w-full mt-2 font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 ${isPlaceholder
             ? "bg-white/10 text-white hover:bg-white/20 border border-white/10"
+            : fieldSource === "admin"
+            ? "bg-transparent text-primary border border-primary hover:bg-primary/10"
             : "bg-primary text-black hover:bg-primary/90 active:scale-[0.98] shadow-lg shadow-primary/20"
             } disabled:opacity-50`}
         >
@@ -125,6 +143,8 @@ export default function StadiumCard({
               Trouver un terrain
               <ArrowRight className="w-4 h-4" />
             </>
+          ) : fieldSource === "admin" ? (
+            "Voir les détails"
           ) : (
             "Réserver"
           )}
