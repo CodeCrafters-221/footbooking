@@ -32,36 +32,83 @@ export const getRecentAdminLogs = async (limit = 10) => {
   return data || [];
 };
 
-// Obtenir les statistiques du dashboard
+// Obtenir les statistiques enrichies du dashboard
 export const getAdminStats = async () => {
   try {
-    const [fieldsRes, usersRes, bookingsRes] = await Promise.all([
-      supabase.from("fields").select("id, field_source", { count: "exact" }),
-      supabase.from("profiles").select("id, role", { count: "exact" }),
-      supabase.from("reservations").select("id, total_price, status", { count: "exact" })
+    const now = new Date();
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString();
+
+    const [fieldsRes, usersRes, bookingsRes, ownersRes, recentBookingsRes, newUsersRes] = await Promise.all([
+      supabase.from("fields").select("id, field_source", { count: "exact" }).is("deleted_at", null),
+      supabase.from("profiles").select("id, role, created_at", { count: "exact" }),
+      supabase.from("reservations").select("id, total_price, status, date, created_at, fields(name)", { count: "exact" }).gte("created_at", twelveMonthsAgo),
+      supabase.from("profiles").select("id", { count: "exact" }).eq("role", "owner"),
+      supabase.from("reservations").select("id, date, start_time, end_time, total_price, status, client_name, user_id, created_at, fields(name)").order("created_at", { ascending: false }).limit(6),
+      supabase.from("profiles").select("id, name, created_at, role").order("created_at", { ascending: false }).limit(5),
     ]);
 
     const totalFields = fieldsRes.count || 0;
     const totalUsers = usersRes.count || 0;
     const totalBookings = bookingsRes.count || 0;
-    
-    // Calcul revenu total (somme des prix des réservations confirmées ou complétées)
+    const totalOwners = ownersRes.count || 0;
+
+    // Revenu total
     let totalRevenue = 0;
-    if (bookingsRes.data) {
-      totalRevenue = bookingsRes.data
-        .filter(b => b.status === "Confirmé" || b.status === "completed")
-        .reduce((sum, b) => sum + (b.total_price || 0), 0);
+    const bookingsData = bookingsRes.data || [];
+    bookingsData.forEach(b => {
+      if (b.status === "Confirmé" || b.status === "Payé" || b.status === "completed") {
+        totalRevenue += b.total_price || 0;
+      }
+    });
+
+    // Réservations par mois (12 derniers mois)
+    const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+    const bookingsByMonth = {};
+    const revenueByMonth = {};
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      bookingsByMonth[key] = { name: monthNames[d.getMonth()], value: 0 };
+      revenueByMonth[key] = { name: monthNames[d.getMonth()], value: 0 };
     }
+    bookingsData.forEach(b => {
+      const d = new Date(b.created_at);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (bookingsByMonth[key]) bookingsByMonth[key].value += 1;
+      if (revenueByMonth[key] && (b.status === "Confirmé" || b.status === "Payé" || b.status === "completed")) {
+        revenueByMonth[key].value += b.total_price || 0;
+      }
+    });
+
+    // Terrains les plus réservés
+    const fieldBookingCount = {};
+    bookingsData.forEach(b => {
+      const name = b.fields?.name || "Inconnu";
+      fieldBookingCount[name] = (fieldBookingCount[name] || 0) + 1;
+    });
+    const topFields = Object.entries(fieldBookingCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
 
     return {
       totalFields,
       totalUsers,
       totalBookings,
-      totalRevenue
+      totalRevenue,
+      totalOwners,
+      bookingsByMonth: Object.values(bookingsByMonth),
+      revenueByMonth: Object.values(revenueByMonth),
+      recentBookings: recentBookingsRes.data || [],
+      newUsers: newUsersRes.data || [],
+      topFields,
     };
   } catch (error) {
     console.error("Error fetching admin stats", error);
-    return { totalFields: 0, totalUsers: 0, totalBookings: 0, totalRevenue: 0 };
+    return {
+      totalFields: 0, totalUsers: 0, totalBookings: 0, totalRevenue: 0, totalOwners: 0,
+      bookingsByMonth: [], revenueByMonth: [], recentBookings: [], newUsers: [], topFields: []
+    };
   }
 };
 
@@ -89,6 +136,66 @@ export const getAdminFields = async (page = 1, limit = 10, sourceFilter = "all")
   }
   
   return { data, count };
+};
+
+// Récupérer la liste complète des terrains avec propriétaires, réservations et images pour un filtrage instantané côté client
+export const getAdminFieldsFull = async () => {
+  const { data, error } = await supabase
+    .from("fields")
+    .select(`
+      id, name, adress, price_per_hour, pelouse, field_source, status, created_at, proprietaire_id, description,
+      profiles:proprietaire_id (name, phone, ville, role),
+      field_images (url_image),
+      disponibilite (id, day_of_week, start_time, end_time),
+      reservations (
+        id, date, start_time, end_time, total_price, status, client_name, created_at
+      )
+    `)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching admin fields full:", error);
+    throw error;
+  }
+  return data || [];
+};
+
+// Mettre à jour les informations d'un terrain par l'admin
+export const updateAdminField = async (fieldId, updatedData, imageFile) => {
+  // 1. Mettre à jour la table fields
+  const { error: updateError } = await supabase
+    .from("fields")
+    .update({
+      name: updatedData.name,
+      adress: updatedData.adress,
+      price_per_hour: parseFloat(updatedData.price_per_hour) || 0,
+      pelouse: updatedData.pelouse,
+      description: updatedData.description,
+      status: updatedData.status || "active"
+    })
+    .eq("id", fieldId);
+
+  if (updateError) throw updateError;
+
+  // 2. Si une nouvelle image est spécifiée, l'envoyer et la lier au terrain
+  if (imageFile) {
+    const fileExt = imageFile.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage.from("terrain-images").upload(fileName, imageFile);
+    if (uploadError) throw uploadError;
+    
+    const { data: { publicUrl } } = supabase.storage.from("terrain-images").getPublicUrl(fileName);
+
+    // Pour l'admin, on ajoute cette image principale
+    const { error: imgError } = await supabase.from("field_images").insert({
+      terrain_id: fieldId,
+      url_image: publicUrl
+    });
+    if (imgError) console.error("Error inserting image record:", imgError);
+  }
+
+  await logAdminAction("updated_field", "fields", fieldId, updatedData);
 };
 
 // Suspendre ou réactiver un terrain
