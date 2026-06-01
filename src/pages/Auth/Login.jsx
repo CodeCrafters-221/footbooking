@@ -76,7 +76,9 @@ export default function Login() {
         navigate("/create-profile");
       } else {
         // Redirection basée sur le rôle
-        if (profileData.role === "owner") {
+        if (profileData.role === "super_admin") {
+          navigate("/admin");
+        } else if (profileData.role === "owner") {
           navigate("/dashboard");
         } else {
           navigate("/");

@@ -29,6 +29,8 @@ import {
   Clock,
   ArrowRight,
   Camera,
+  Phone,
+  MessageCircle,
 } from "lucide-react";
 
 export default function TerrainDetails() {
@@ -157,6 +159,20 @@ export default function TerrainDetails() {
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
               {terrain.name}
             </h1>
+            {terrain.field_source === 'admin' && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-red-500/20 text-red-500 border border-red-500/50 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                  Terrain non partenaire
+                </span>
+                <span className="bg-orange-500/20 text-orange-400 border border-orange-500/50 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                  Disponibilité à confirmer
+                </span>
+                <span className="bg-blue-500/20 text-blue-400 border border-blue-500/50 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                  <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                  Réservation via contact direct
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-4 text-text-secondary text-sm md:text-base">
               <span className="flex items-center gap-1">
                 <MapPin className="text-primary w-5 h-5" />
@@ -375,10 +391,11 @@ export default function TerrainDetails() {
             </section>
 
             {/* Interactive Calendar Mockup */}
-            <section className="border-t border-surface-light pt-8">
-              <h3 className="text-2xl font-black italic text-white mb-6">
-                Disponibilités
-              </h3>
+            {terrain.field_source !== 'admin' && (
+              <section className="border-t border-surface-light pt-8">
+                <h3 className="text-2xl font-black italic text-white mb-6">
+                  Disponibilités
+                </h3>
               <div className="bg-[#2c241b] rounded-3xl p-6 md:p-8 border border-[#493622] shadow-2xl">
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between mb-6">
@@ -508,6 +525,7 @@ export default function TerrainDetails() {
                 </div>
               </div>
             </section>
+            )}
 
             {user && (
               <div className="mb-8 p-6 rounded-2xl bg-surface-dark border border-surface-light">
@@ -697,98 +715,131 @@ export default function TerrainDetails() {
           {/* Right Column: Sticky Booking Card */}
           <div className="lg:col-span-4 relative">
             <div className="sticky top-24 bg-[#2c241b] rounded-[2rem] p-8 border border-[#493622] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-              <div className="flex justify-between items-start mb-8 border-b border-[#493622] pb-6">
+              {terrain.field_source === 'admin' ? (
                 <div>
-                  <span className="text-3xl font-black text-white block tracking-tighter">
-                    {(
-                      terrain.price_per_hour ||
-                      terrain.price ||
-                      0
-                    ).toLocaleString()}{" "}
-                    FCFA
-                  </span>
-                  <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
-                    par heure de jeu
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 bg-surface-light px-2 py-1 rounded-md">
-                  <Star className="text-primary w-4 h-4 fill-current" />
-                  <span className="text-white font-bold text-sm">
-                    {ratingStats.average}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-3 mb-8">
-                {/* Date/Time Display */}
-                <div className="bg-[#231a10] rounded-2xl p-4 border border-[#493622] flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-[#cbad90] uppercase font-black tracking-widest">
-                      Date
-                    </span>
-                    <span className="text-white font-bold capitalize">
-                      {new Intl.DateTimeFormat("fr-FR", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      }).format(new Date(selectedDate))}
+                  <div className="mb-6 border-b border-[#493622] pb-6">
+                    <span className="text-3xl font-black text-white block tracking-tighter">
+                      Prix sur demande
                     </span>
                   </div>
-                  <Calendar className="text-primary w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-xl font-black text-white mb-2">Contacter le terrain</h3>
+                  <p className="text-[#cbad90] text-sm leading-relaxed mb-6">
+                    Les disponibilités et le prix de ce terrain doivent être confirmés directement avec le propriétaire.
+                  </p>
+                  <div className="space-y-4">
+                    <a 
+                      href={`https://wa.me/${(terrain.telephone || terrain.phone || '').replace(/[^0-9]/g, '')}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="w-full bg-[#25D366] text-white font-bold py-3.5 rounded-xl hover:bg-[#20bd5a] active:scale-[0.98] transition-all shadow-lg hover:shadow-[#25D366]/20 shadow-[#25D366]/20 flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Contacter via WhatsApp
+                    </a>
+                    <a 
+                      href={`tel:${terrain.telephone || terrain.phone || ''}`}
+                      className="w-full bg-surface-light text-white font-bold py-3.5 rounded-xl hover:bg-surface-highlight active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-[#493622]"
+                    >
+                      <Phone className="w-5 h-5" />
+                      Appeler
+                    </a>
+                  </div>
                 </div>
-                <div className="bg-[#231a10] rounded-2xl p-4 border border-[#493622] flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-[#cbad90] uppercase font-black tracking-widest">
-                      Horaire
-                    </span>
-                    <span className="text-white font-bold">
-                      {selectedTimeSlot ? (
-                        selectedTimeSlot
-                      ) : (
-                        <span className="text-text-secondary/70 italic text-xs">
-                          A sélectionner
+              ) : (
+                <>
+                  <div className="flex justify-between items-start mb-8 border-b border-[#493622] pb-6">
+                    <div>
+                      <span className="text-3xl font-black text-white block tracking-tighter">
+                        {(
+                          terrain.price_per_hour ||
+                          terrain.price ||
+                          0
+                        ).toLocaleString()}{" "}
+                        FCFA
+                      </span>
+                      <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
+                        par heure de jeu
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-surface-light px-2 py-1 rounded-md">
+                      <Star className="text-primary w-4 h-4 fill-current" />
+                      <span className="text-white font-bold text-sm">
+                        {ratingStats.average}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-3 mb-8">
+                    {/* Date/Time Display */}
+                    <div className="bg-[#231a10] rounded-2xl p-4 border border-[#493622] flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-[#cbad90] uppercase font-black tracking-widest">
+                          Date
                         </span>
-                      )}
-                    </span>
+                        <span className="text-white font-bold capitalize">
+                          {new Intl.DateTimeFormat("fr-FR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          }).format(new Date(selectedDate))}
+                        </span>
+                      </div>
+                      <Calendar className="text-primary w-5 h-5 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <div className="bg-[#231a10] rounded-2xl p-4 border border-[#493622] flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-[#cbad90] uppercase font-black tracking-widest">
+                          Horaire
+                        </span>
+                        <span className="text-white font-bold">
+                          {selectedTimeSlot ? (
+                            selectedTimeSlot
+                          ) : (
+                            <span className="text-text-secondary/70 italic text-xs">
+                              A sélectionner
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <Clock className="text-primary w-5 h-5 group-hover:scale-110 transition-transform" />
+                    </div>
                   </div>
-                  <Clock className="text-primary w-5 h-5 group-hover:scale-110 transition-transform" />
-                </div>
-              </div>
-              {/* Breakdown */}
-              <div className="space-y-3 mb-8">
-                <div className="flex justify-between text-text-secondary text-sm">
-                  <span>{basePrice.toLocaleString()} x 1 heure</span>
-                  <span>{basePrice.toLocaleString()} FCFA</span>
-                </div>
-                <div className="flex justify-between text-text-secondary text-sm">
-                  <span>Frais de service</span>
-                  <span>
-                    {/* {serviceFee.toLocaleString()} FCFA */}
-                      Gratuit
-                  </span>
-                </div>
-                <div className="h-px bg-surface-light my-2"></div>
-                <div className="flex justify-between text-white font-bold text-base">
-                  <span>Total</span>
-                  <span>{totalPrice.toLocaleString()} FCFA</span>
-                </div>
-              </div>
-              {/* CTA */}{" "}
-              <div className="p-4 bg-surface-dark border-t border-surface-highlight">
-                <button
-                  onClick={() => setIsReservationOpen(true)}
-                  className="w-full bg-primary text-black font-bold py-3.5 rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all shadow-lg hover:shadow-primary/20 shadow-primary/20 flex flex-col items-center"
-                >
-                  <span className="text-base sm:text-lg">
-                    Réserver ce terrain
-                  </span>
-                  <span className="text-xs font-medium opacity-90 mt-0.5">
-                    Paiement sécurisé par Wave
-                  </span>
-                </button>
-              </div>
-              <p className="text-center text-xs text-text-secondary mt-4">
-                Aucun débit immédiat. Annulation gratuite jusqu'à 24h avant.
-              </p>
+                  {/* Breakdown */}
+                  <div className="space-y-3 mb-8">
+                    <div className="flex justify-between text-text-secondary text-sm">
+                      <span>{basePrice.toLocaleString()} x 1 heure</span>
+                      <span>{basePrice.toLocaleString()} FCFA</span>
+                    </div>
+                    <div className="flex justify-between text-text-secondary text-sm">
+                      <span>Frais de service</span>
+                      <span>
+                        Gratuit
+                      </span>
+                    </div>
+                    <div className="h-px bg-surface-light my-2"></div>
+                    <div className="flex justify-between text-white font-bold text-base">
+                      <span>Total</span>
+                      <span>{totalPrice.toLocaleString()} FCFA</span>
+                    </div>
+                  </div>
+                  {/* CTA */}
+                  <div className="p-4 bg-surface-dark border-t border-surface-highlight">
+                    <button
+                      onClick={() => setIsReservationOpen(true)}
+                      className="w-full bg-primary text-black font-bold py-3.5 rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all shadow-lg hover:shadow-primary/20 shadow-primary/20 flex flex-col items-center"
+                    >
+                      <span className="text-base sm:text-lg">
+                        Réserver ce terrain
+                      </span>
+                      <span className="text-xs font-medium opacity-90 mt-0.5">
+                        Paiement sécurisé par Wave
+                      </span>
+                    </button>
+                  </div>
+                  <p className="text-center text-xs text-text-secondary mt-4">
+                    Aucun débit immédiat. Annulation gratuite jusqu'à 24h avant.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>

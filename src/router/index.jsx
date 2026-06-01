@@ -29,6 +29,15 @@ const Owners = lazy(() => import("../pages/Owners"));
 const NotFound = lazy(() => import("../sections/NotFound"));
 import OwnerRedirect from "../components/OwnerRedirect";
 
+// Admin Imports
+import AdminLayout from "../layouts/AdminLayout";
+const AdminDashboard = lazy(() => import("../pages/Admin/Dashboard"));
+const AdminFields = lazy(() => import("../pages/Admin/Fields"));
+const AdminBookings = lazy(() => import("../pages/Admin/Bookings"));
+const AdminUsers = lazy(() => import("../pages/Admin/Users"));
+const AdminOwners = lazy(() => import("../pages/Admin/Owners"));
+const AdminSettings = lazy(() => import("../pages/Admin/Settings"));
+
 const withSuspense = (element) => (
   <Suspense fallback={<Loader />}>
     {element}
@@ -55,6 +64,24 @@ export const router = createBrowserRouter([
       { path: "create-field", element: <CreateFieldPage /> },
       { path: "edit-field/:id", element: <EditFieldPage /> },
       { path: "compte", element: <Settings /> },
+    ],
+  },
+
+  // ✅ ADMIN (avec layout spécifique)
+  {
+    path: "/admin",
+    element: (
+      <ProtectedRoute allowedRoles={["super_admin"]}>
+        <AdminLayout />
+      </ProtectedRoute>
+    ),
+    children: [
+      { index: true, element: withSuspense(<AdminDashboard />) },
+      { path: "terrains", element: withSuspense(<AdminFields />) },
+      { path: "reservations", element: withSuspense(<AdminBookings />) },
+      { path: "utilisateurs", element: withSuspense(<AdminUsers />) },
+      { path: "proprietaires", element: withSuspense(<AdminOwners />) },
+      { path: "parametres", element: withSuspense(<AdminSettings />) },
     ],
   },
 
