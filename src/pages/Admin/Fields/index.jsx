@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { 
-  Plus, Search, Filter, Edit2, Trash2, Eye, MapPin, 
-  Activity, Clock, Coins, Users, CheckCircle, Calendar, 
-  ArrowUpDown, Phone, MessageCircle, X, Info, Trophy, Layout, ShieldAlert
+  Plus, Search, Edit2, Trash2, Eye, MapPin, 
+  Activity, Clock, Coins, CheckCircle, Calendar, 
+  MessageCircle, X, Layout, ShieldAlert, ChevronLeft, ChevronRight, Lock
 } from "lucide-react";
 import { getAdminFieldsFull, toggleFieldStatus, softDeleteField } from "../../../services/adminService";
 import { toast } from "react-toastify";
@@ -181,6 +181,18 @@ export default function AdminFields() {
   const getDayNameFr = (dayNum) => {
     const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
     return days[dayNum] || "Inconnu";
+  };
+
+  /** Seuls les terrains vitrine (field_source admin) sont modifiables par l'administration. */
+  const canAdminEdit = (field) => field?.field_source === "admin";
+
+  const handleEditClick = (field) => {
+    if (!canAdminEdit(field)) {
+      toast.info("Ce terrain partenaire est en lecture seule. Seuls les terrains vitrine admin peuvent être modifiés.");
+      return;
+    }
+    setEditingField(field);
+    setIsEditOpen(true);
   };
 
   return (
@@ -454,13 +466,23 @@ export default function AdminFields() {
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
-                          <button 
-                            onClick={() => { setEditingField(field); setIsEditOpen(true); }}
-                            className="p-2 text-[#cbad90] hover:text-primary bg-[#493622]/30 hover:bg-[#493622] rounded-xl transition-all duration-200 border border-[#493622]/20 hover:border-primary/20"
-                            title="Modifier"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
+                          {canAdminEdit(field) ? (
+                            <button 
+                              onClick={() => handleEditClick(field)}
+                              className="p-2 text-[#cbad90] hover:text-primary bg-[#493622]/30 hover:bg-[#493622] rounded-xl transition-all duration-200 border border-[#493622]/20 hover:border-primary/20"
+                              title="Modifier"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleOpenDetails(field)}
+                              className="p-2 text-[#cbad90] hover:text-amber-400 bg-[#493622]/30 hover:bg-amber-500/10 rounded-xl transition-all duration-200 border border-[#493622]/20"
+                              title="Consultation seule"
+                            >
+                              <Lock className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button 
                             onClick={() => handleDelete(field.id)}
                             className="p-2 text-[#cbad90] hover:text-red-500 bg-[#493622]/30 hover:bg-red-500/10 rounded-xl transition-all duration-200 border border-[#493622]/20 hover:border-red-500/20"
@@ -556,6 +578,15 @@ export default function AdminFields() {
 
             {/* Scrollable Container */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-thin">
+
+              {!canAdminEdit(selectedField) && (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-200/90 text-xs">
+                  <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p>
+                    <span className="font-bold text-amber-300">Lecture seule —</span> ce terrain appartient à un propriétaire partenaire. L&apos;administration peut consulter les informations mais pas les modifier.
+                  </p>
+                </div>
+              )}
               
               {/* Galerie d'images */}
               <div className="space-y-2">
@@ -803,6 +834,19 @@ export default function AdminFields() {
               )}
 
             </div>
+
+            {canAdminEdit(selectedField) && (
+              <div className="p-4 border-t border-[#493622] bg-[#2c241b]">
+                <button
+                  type="button"
+                  onClick={() => handleEditClick(selectedField)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-background-dark font-black text-sm hover:bg-primary-hover transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Modifier ce terrain
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -390,3 +390,165 @@ export const reactivateOwner = async (userId) => {
   await logAdminAction("reactivated_owner", "profiles", userId);
 };
 
+const ROLE_BACKUP_PREFIX = "footbooking_role_backup_";
+
+// Bloquer / débloquer un utilisateur (rôle applicatif, colonne role existante)
+export const blockUser = async (userId, currentRole = "user") => {
+  try {
+    localStorage.setItem(`${ROLE_BACKUP_PREFIX}${userId}`, currentRole);
+  } catch {
+    /* ignore */
+  }
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role: "blocked" })
+    .eq("id", userId);
+  if (error) throw error;
+  await logAdminAction("blocked_user", "profiles", userId, { previousRole: currentRole });
+};
+
+export const unblockUser = async (userId, restoreRole) => {
+  let role = restoreRole;
+  if (!role) {
+    try {
+      role = localStorage.getItem(`${ROLE_BACKUP_PREFIX}${userId}`) || "user";
+      localStorage.removeItem(`${ROLE_BACKUP_PREFIX}${userId}`);
+    } catch {
+      role = "user";
+    }
+  }
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role })
+    .eq("id", userId);
+  if (error) throw error;
+  await logAdminAction("unblocked_user", "profiles", userId, { restoreRole: role });
+  return role;
+};
+
+// Valider ou annuler une réservation (admin)
+export const updateAdminBookingStatus = async (bookingId, status) => {
+  const { error } = await supabase
+    .from("reservations")
+    .update({ status })
+    .eq("id", bookingId);
+
+  if (error) throw error;
+
+  const action =
+    status === "Confirmé" || status === "Payé"
+      ? "confirmed_booking"
+      : status === "Annulé"
+        ? "cancelled_booking"
+        : "updated_booking_status";
+
+  await logAdminAction(action, "reservations", bookingId, { status });
+};
+
+// Recherche globale admin
+export const globalAdminSearch = async (query) => {
+  const trimmed = query?.trim();
+  if (!trimmed || trimmed.length < 2) {
+    return { users: [], fields: [], bookings: [], owners: [] };
+  }
+
+  const term = `%${trimmed}%`;
+
+  const [usersRes, fieldsRes, bookingsRes, ownersRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, name, email, role")
+      .or(`name.ilike.${term},email.ilike.${term}`)
+      .neq("role", "super_admin")
+      .limit(6),
+    supabase
+      .from("fields")
+      .select("id, name, adress, field_source, status")
+      .ilike("name", term)
+      .is("deleted_at", null)
+      .limit(6),
+    supabase
+      .from("reservations")
+      .select("id, date, status, client_name, fields(name)")
+      .ilike("client_name", term)
+      .order("created_at", { ascending: false })
+      .limit(6),
+    supabase
+      .from("profiles")
+      .select("id, name, phone, ville, role")
+      .eq("role", "owner")
+      .or(`name.ilike.${term},phone.ilike.${term}`)
+      .limit(6),
+  ]);
+
+  return {
+    users: usersRes.data || [],
+    fields: fieldsRes.data || [],
+    bookings: bookingsRes.data || [],
+    owners: ownersRes.data || [],
+  };
+};
+
+// Données pour le centre de notifications admin
+export const getAdminNotificationFeed = async () => {
+  const [pendingBookingsRes, newUsersRes, recentLogsRes] = await Promise.all([
+    supabase
+      .from("reservations")
+      .select("id, date, status, client_name, created_at, fields(name)")
+      .in("status", ["En attente", "En attente de paiement"])
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("profiles")
+      .select("id, name, role, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    getRecentAdminLogs(5),
+  ]);
+
+  const notifications = [];
+
+  (pendingBookingsRes.data || []).forEach((b) => {
+    notifications.push({
+      id: `booking-${b.id}`,
+      type: "booking",
+      title: "Réservation en attente",
+      message: `${b.client_name || "Client"} — ${b.fields?.name || "Terrain"}`,
+      createdAt: b.created_at,
+      link: "/admin/reservations",
+      meta: b.status,
+    });
+  });
+
+  const weekAgo = Date.now() - 7 * 86400000;
+  (newUsersRes.data || []).forEach((u) => {
+    if (new Date(u.created_at).getTime() >= weekAgo) {
+      notifications.push({
+        id: `user-${u.id}`,
+        type: "user",
+        title: "Nouvel utilisateur",
+        message: `${u.name || "Sans nom"} (${u.role})`,
+        createdAt: u.created_at,
+        link: "/admin/utilisateurs",
+        meta: u.role,
+      });
+    }
+  });
+
+  (recentLogsRes || []).slice(0, 3).forEach((log) => {
+    notifications.push({
+      id: `log-${log.id}`,
+      type: "log",
+      title: "Action admin",
+      message: `${log.action} — ${log.profiles?.name || "Admin"}`,
+      createdAt: log.created_at,
+      link: "/admin",
+      meta: log.target_table,
+    });
+  });
+
+  return notifications.sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+  );
+};
+

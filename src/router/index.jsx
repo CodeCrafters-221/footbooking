@@ -37,6 +37,7 @@ const AdminBookings = lazy(() => import("../pages/Admin/Bookings"));
 const AdminUsers = lazy(() => import("../pages/Admin/Users"));
 const AdminOwners = lazy(() => import("../pages/Admin/Owners"));
 const AdminSettings = lazy(() => import("../pages/Admin/Settings"));
+const AdminReports = lazy(() => import("../pages/Admin/Reports"));
 
 const withSuspense = (element) => (
   <Suspense fallback={<Loader />}>
@@ -81,6 +82,7 @@ export const router = createBrowserRouter([
       { path: "reservations", element: withSuspense(<AdminBookings />) },
       { path: "utilisateurs", element: withSuspense(<AdminUsers />) },
       { path: "proprietaires", element: withSuspense(<AdminOwners />) },
+      { path: "signalements", element: withSuspense(<AdminReports />) },
       { path: "parametres", element: withSuspense(<AdminSettings />) },
     ],
   },

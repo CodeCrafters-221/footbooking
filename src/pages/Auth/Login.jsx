@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "../../services/supabaseClient";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router";
+import { getMaintenanceMode } from "../../utils/platformConfig";
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -69,20 +70,29 @@ export default function Login() {
         .eq("id", user.id)
         .maybeSingle();
 
+      if (profileData?.role === "blocked") {
+        await supabase.auth.signOut();
+        toast.error("Votre compte a été suspendu. Contactez l'administration.");
+        return;
+      }
+
+      const maintenance = getMaintenanceMode();
+      if (maintenance && profileData?.role !== "super_admin") {
+        await supabase.auth.signOut();
+        toast.warning("La plateforme est en maintenance. Réessayez plus tard.");
+        return;
+      }
+
       toast.success("Ravi de vous revoir 😀 !");
 
       if (!profileData) {
-        // Rediriger vers la création de profil si inexistant
         navigate("/create-profile");
+      } else if (profileData.role === "super_admin") {
+        navigate("/admin");
+      } else if (profileData.role === "owner") {
+        navigate("/dashboard");
       } else {
-        // Redirection basée sur le rôle
-        if (profileData.role === "super_admin") {
-          navigate("/admin");
-        } else if (profileData.role === "owner") {
-          navigate("/dashboard");
-        } else {
-          navigate("/");
-        }
+        navigate("/");
       }
     } catch (error) {
       console.error(error);
