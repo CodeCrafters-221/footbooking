@@ -4,12 +4,15 @@ import './index.css'
 import App from './App.jsx'
 import { ToastContainer } from 'react-toastify';
 import AuthProvider from "./context/AuthContext.jsx"
+import { PlatformProvider } from "./context/PlatformContext.jsx"
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
-      <App />
-      <ToastContainer theme='dark' closeOnClick={true} position='bottom-right' />
+      <PlatformProvider>
+        <App />
+        <ToastContainer theme='dark' closeOnClick={true} position='bottom-right' />
+      </PlatformProvider>
     </AuthProvider>
   </StrictMode>
 )

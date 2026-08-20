@@ -9,8 +9,10 @@ import {
   Instagram,
   Twitter,
 } from "lucide-react";
+import { usePlatform } from "../context/PlatformContext";
 
 export default function Footer() {
+  const { contactEmail } = usePlatform();
   return (
     <footer className="w-full bg-[#1a130c] border-t border-surface-highlight pt-16 pb-8 px-6 sm:px-12 lg:px-24">
       <div className="max-w-4xl mx-auto">
@@ -71,7 +73,7 @@ export default function Footer() {
 
               <li className="flex items-center gap-2">
                 <Mail className="text-primary w-4 h-4" />
-                  <a href="mailto:code.crafters221@gmail.com?subject=Bienvenue, comment pouvons-nous vous aider ?&body=FootBooking vous accompagne pour toutes vos réservations de terrains.">contact@footbooking.sn</a>
+                  <a href={`mailto:${contactEmail}?subject=Bienvenue, comment pouvons-nous vous aider ?&body=FootBooking vous accompagne pour toutes vos réservations de terrains.`}>{contactEmail}</a>
               </li>
 
               <li className="flex items-center gap-2">

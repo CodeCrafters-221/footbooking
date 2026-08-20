@@ -4,6 +4,8 @@ import { generateTicket } from "../../utils/ticketGenerator";
 import { AvailabilityService } from "../../services/AvailabilityService";
 import { isSubscription } from "../../utils/dateTime";
 import { toast } from "react-toastify";
+import ReportModal from "../../components/ReportModal";
+import { ReportService } from "../../services/ReportService";
 
 const normalizeStatus = (status) => (status || "").toLowerCase();
 const getStatusColor = (status) => {
@@ -31,6 +33,7 @@ const MyReservations = () => {
   const [loadingAction, setLoadingAction] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnSiteModal, setShowOnSiteModal] = useState(false);
+  const [reportBooking, setReportBooking] = useState(null);
   const [onSiteForm, setOnSiteForm] = useState({
     firstName: "",
     lastName: "",
@@ -216,6 +219,27 @@ const MyReservations = () => {
     }
   };
 
+  const handleReportClient = async ({ type, description }) => {
+    if (!reportBooking) return;
+    try {
+      await ReportService.createReport({
+        report_type: "comportement",
+        subject: type,
+        description: `Réservation ${reportBooking.id} — ${reportBooking.fieldName}${reportBooking.date ? ` — ${reportBooking.date}` : ""}${reportBooking.time ? ` — ${reportBooking.time}` : ""}. ${description}`,
+        target_type: "utilisateur",
+        target_label: reportBooking.clientName || "Client",
+      });
+      toast.success("Signalement envoyé ! Notre équipe va l'examiner.");
+      setReportBooking(null);
+    } catch (err) {
+      console.error("Erreur lors du signalement:", err);
+      toast.error(
+        err?.message ||
+          "Une erreur est survenue lors de l'envoi du signalement.",
+      );
+    }
+  };
+
   if (isLoadingReservations) {
     return (
       <div className="h-[400px] flex flex-col items-center justify-center gap-4">
@@ -382,6 +406,17 @@ const MyReservations = () => {
                             : "archive"}
                         </span>
                       </button>
+                      {status === "payé" && (
+                        <button
+                          onClick={() => setReportBooking(booking)}
+                          className="size-10 flex items-center justify-center rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:text-white hover:bg-red-500/70 transition-all"
+                          title="Signaler le client"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">
+                            flag
+                          </span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -662,6 +697,32 @@ const MyReservations = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {reportBooking && (
+        <ReportModal
+          isOpen
+          onClose={() => setReportBooking(null)}
+          title="Signaler un client"
+          subtitle={`Signalement concernant « ${reportBooking.clientName || "le client"} » après le service`}
+          typeOptions={[
+            {
+              value: "Non-respect des règles",
+              label: "Non-respect des règles",
+            },
+            {
+              value: "Comportement inapproprié",
+              label: "Comportement inapproprié",
+            },
+            { value: "Dommages matériels", label: "Dommages matériels" },
+            {
+              value: "Annulation de dernière minute",
+              label: "Annulation de dernière minute",
+            },
+            { value: "Autre", label: "Autre" },
+          ]}
+          onSubmit={handleReportClient}
+        />
       )}
     </div>
   );

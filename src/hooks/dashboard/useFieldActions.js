@@ -4,13 +4,11 @@ import { TerrainService } from "../../services/TerrainService";
 export const useFieldActions = (dispatch, refreshData) => {
   const addField = useCallback(
     async (formData, imageFile) => {
-      const newField = await TerrainService.createTerrain(formData, imageFile);
-      const mapped = TerrainService._mapTerrain(newField);
-
-      dispatch({ type: "ADD_FIELD", payload: mapped });
+      await TerrainService.createTerrain(formData, imageFile);
+      await refreshData();
       return true;
     },
-    [dispatch],
+    [refreshData],
   );
 
   const updateField = useCallback(

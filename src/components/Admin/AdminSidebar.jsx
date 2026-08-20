@@ -7,7 +7,8 @@ import {
   Briefcase, 
   Settings,
   LogOut,
-  X
+  X,
+  Flag,
 } from "lucide-react";
 import { supabase } from "../../services/supabaseClient";
 
@@ -23,6 +24,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
     { name: "Réservations", path: "/admin/reservations", icon: CalendarCheck },
     { name: "Utilisateurs", path: "/admin/utilisateurs", icon: Users },
     { name: "Propriétaires", path: "/admin/proprietaires", icon: Briefcase },
+    { name: "Signalements", path: "/admin/signalements", icon: Flag },
     { name: "Paramètres", path: "/admin/parametres", icon: Settings },
   ];
 

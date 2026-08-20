@@ -561,24 +561,7 @@ export const DashboardProvider = ({ children }) => {
     };
   };
 
-  // --- PERSISTENT ARCHIVING ---
-  useEffect(() => {
-    if (user) {
-      const storageKey = `archived_reservations_${user.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          setArchivedIds(JSON.parse(saved).map((id) => String(id)));
-        } catch {
-          setArchivedIds([]);
-        }
-      } else {
-        setArchivedIds([]);
-      }
-    }
-  }, [user]);
-
-  // (Replaced by the logic above)
+  // (Archive loading handled by first useEffect at top of component)
 
   const toggleArchiveReservation = useCallback((id) => {
     const idStr = String(id);
