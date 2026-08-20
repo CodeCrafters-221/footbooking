@@ -1,9 +1,11 @@
-import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
+import { usePlatform } from "../context/PlatformContext";
 import { Navigate } from "react-router";
+import MaintenancePage from "../pages/Maintenance";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const { user, profile, loading, profileLoading } = useAuth();
+  const { maintenanceMode } = usePlatform();
 
   if (loading) {
     return (
@@ -15,7 +17,6 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
   if (!user) return <Navigate to="/login" />;
 
-  // Si on a besoin d'un rôle spécifique, on attend que le profil soit chargé
   if (allowedRoles && profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-dark">
@@ -24,7 +25,20 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     );
   }
 
-  // Vérification des rôles
+  if (profile?.is_active === false) {
+    return <MaintenancePage blocked />;
+  }
+
+  const isSuperAdmin = profile?.role === "super_admin";
+
+  if (
+    maintenanceMode &&
+    !isSuperAdmin &&
+    !(allowedRoles?.length === 1 && allowedRoles[0] === "super_admin")
+  ) {
+    return <MaintenancePage />;
+  }
+
   if (allowedRoles) {
     if (!profile || !allowedRoles.includes(profile.role)) {
       return <Navigate to="/" />;

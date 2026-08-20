@@ -1,0 +1,44 @@
+Connecting to: https://nuqjhwmfpiggdzdnjhnr.supabase.co
+--- profiles ---
+Sample profile keys: no rows []
+--- fields ---
+Sample fields keys: [
+  "id",
+  "proprietaire_id",
+  "name",
+  "description",
+  "adress",
+  "pelouse",
+  "created_at",
+  "price",
+  "opening_hours",
+  "price_per_hour",
+  "field_source",
+  "status",
+  "deleted_at"
+] [
+  {
+    "id": 72,
+    "proprietaire_id": "a600e1cf-8328-4013-ad48-ddcb80aac33e",
+    "name": "Terrain police",
+    "description": "📞 WhatsApp/Contact: 770241948",
+    "adress": "RUE BIS 23",
+    "pelouse": "Synthétique",
+    "created_at": "2026-05-15T22:14:51.365963+00:00",
+    "price": null,
+    "opening_hours": "08:00 - 00:00",
+    "price_per_hour": 25000,
+    "field_source": "admin",
+    "status": "active",
+    "deleted_at": null
+  }
+]
+--- reservations ---
+Sample reservations keys: no rows []
+--- platform_settings ---
+Error platform_settings: Could not find the table 'public.platform_settings' in the schema cache
+--- reports ---
+Error reports: Could not find the table 'public.reports' in the schema cache
+--- report_comments ---
+Error report_comments: Could not find the table 'public.report_comments' in the schema cache
+--- notifications ---

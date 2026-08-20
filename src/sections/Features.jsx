@@ -38,6 +38,7 @@ export default function Features() {
             *,
             field_images (url_image)
           `)
+          .is("deleted_at", null)
           .limit(3)
           .order("created_at", { ascending: false });
 
