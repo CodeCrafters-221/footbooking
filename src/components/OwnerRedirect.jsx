@@ -15,7 +15,7 @@ export default function OwnerRedirect({ children }) {
     );
   }
 
-  if (profile?.role === "blocked") {
+  if (profile?.is_active === false) {
     return <MaintenancePage blocked />;
   }
 

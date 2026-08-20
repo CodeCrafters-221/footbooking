@@ -242,11 +242,11 @@ export default function AdminTopbar({ toggleSidebar }) {
                       type="button"
                       onClick={() => handleNotifClick(notif)}
                       className={`w-full text-left p-4 border-b border-[#493622]/30 hover:bg-[#493622]/30 transition-colors ${
-                        !notif.read ? "bg-primary/5" : ""
+                        !notif.is_read ? "bg-primary/5" : ""
                       }`}
                     >
                       <div className="flex items-start gap-2">
-                        {!notif.read && (
+                        {!notif.is_read && (
                           <span className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
@@ -255,7 +255,7 @@ export default function AdminTopbar({ toggleSidebar }) {
                             {notif.message}
                           </p>
                           <p className="text-[10px] text-gray-500 mt-1">
-                            {formatRelativeTime(notif.createdAt)}
+                            {formatRelativeTime(notif.created_at)}
                           </p>
                         </div>
                       </div>

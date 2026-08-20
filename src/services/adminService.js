@@ -1,17 +1,77 @@
 import { supabase } from "./supabaseClient";
+import { ReservationService } from "./ReservationService";
+
+// --- PLATFORM SETTINGS ---
+
+export const getPlatformSettings = async () => {
+  const { data, error } = await supabase
+    .from("platform_settings")
+    .select("*")
+    .eq("id", true)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updatePlatformSettings = async (updates) => {
+  const { data, error } = await supabase
+    .from("platform_settings")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", true)
+    .select();
+
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Aucune ligne mise à jour. Vérifiez vos permissions.");
+  }
+  await logAdminAction("updated_platform_settings", "platform", null, updates);
+};
+
+// --- NOTIFICATIONS ---
+
+export const getNotifications = async () => {
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("id, title, message, type, is_read, created_at, link, meta")
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const markNotificationRead = async (notificationId) => {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("id", notificationId);
+
+  if (error) throw error;
+};
+
+export const markAllNotificationsReadSupabase = async () => {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("is_read", false);
+
+  if (error) throw error;
+};
 
 // Log admin action
 export const logAdminAction = async (action, targetTable, targetId, details = {}) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
   
-  await supabase.from("admin_logs").insert([{
+  const { error } = await supabase.from("admin_logs").insert([{
     admin_id: user.id,
     action,
     target_table: targetTable,
     target_id: targetId,
     details
   }]);
+  if (error) console.error("logAdminAction failed:", error);
 };
 
 // Récupérer les logs récents
@@ -143,7 +203,7 @@ export const getAdminFieldsFull = async () => {
   const { data, error } = await supabase
     .from("fields")
     .select(`
-      id, name, adress, price_per_hour, pelouse, field_source, status, created_at, proprietaire_id, description,
+      id, name, adress, price_per_hour, pelouse, capacity, field_source, status, created_at, proprietaire_id, description,
       profiles:proprietaire_id (name, phone, ville, role),
       field_images (url_image),
       disponibilite (id, day_of_week, start_time, end_time),
@@ -171,6 +231,7 @@ export const updateAdminField = async (fieldId, updatedData, imageFile) => {
       adress: updatedData.adress,
       price_per_hour: parseFloat(updatedData.price_per_hour) || 0,
       pelouse: updatedData.pelouse,
+      capacity: parseInt(updatedData.capacity) || 10,
       description: updatedData.description,
       status: updatedData.status || "active"
     })
@@ -243,15 +304,14 @@ export const createVitrineField = async (terrainData, imageFile) => {
     imageUrl = publicUrl;
   }
 
-  const descriptionText = terrainData.telephone 
-    ? `${terrainData.description || ""}\n\n📞 WhatsApp/Contact: ${terrainData.telephone}`.trim()
-    : (terrainData.description || "");
+  const descriptionText = terrainData.description || "";
 
   const { data: terrain, error } = await supabase.from("fields").insert({
     name: terrainData.name,
     adress: terrainData.adress,
     price_per_hour: parseFloat(terrainData.price_per_hour) || 0,
     pelouse: terrainData.pelouse || "Synthétique",
+    capacity: parseInt(terrainData.capacity) || 10,
     description: descriptionText,
     field_source: "admin", // Le marque comme terrain vitrine
     status: "active",
@@ -374,7 +434,7 @@ export const getAdminOwners = async (page = 1, limit = 10, search = "") => {
 export const suspendOwner = async (ownerId) => {
   const { error } = await supabase
     .from("profiles")
-    .update({ role: "user" })
+    .update({ role: "user", backup_role: "owner" })
     .eq("id", ownerId);
   if (error) throw error;
   await logAdminAction("suspended_owner", "profiles", ownerId);
@@ -384,56 +444,36 @@ export const suspendOwner = async (ownerId) => {
 export const reactivateOwner = async (userId) => {
   const { error } = await supabase
     .from("profiles")
-    .update({ role: "owner" })
+    .update({ role: "owner", backup_role: null })
     .eq("id", userId);
   if (error) throw error;
   await logAdminAction("reactivated_owner", "profiles", userId);
 };
 
-const ROLE_BACKUP_PREFIX = "footbooking_role_backup_";
+export const isProfileInactive = (profile) => profile?.is_active === false;
 
-// Bloquer / débloquer un utilisateur (rôle applicatif, colonne role existante)
-export const blockUser = async (userId, currentRole = "user") => {
-  try {
-    localStorage.setItem(`${ROLE_BACKUP_PREFIX}${userId}`, currentRole);
-  } catch {
-    /* ignore */
-  }
+// Bloquer / débloquer via le champ existant profiles.is_active
+export const blockUser = async (userId) => {
   const { error } = await supabase
     .from("profiles")
-    .update({ role: "blocked" })
+    .update({ is_active: false })
     .eq("id", userId);
   if (error) throw error;
-  await logAdminAction("blocked_user", "profiles", userId, { previousRole: currentRole });
+  await logAdminAction("blocked_user", "profiles", userId, { is_active: false });
 };
 
-export const unblockUser = async (userId, restoreRole) => {
-  let role = restoreRole;
-  if (!role) {
-    try {
-      role = localStorage.getItem(`${ROLE_BACKUP_PREFIX}${userId}`) || "user";
-      localStorage.removeItem(`${ROLE_BACKUP_PREFIX}${userId}`);
-    } catch {
-      role = "user";
-    }
-  }
+export const unblockUser = async (userId) => {
   const { error } = await supabase
     .from("profiles")
-    .update({ role })
+    .update({ is_active: true })
     .eq("id", userId);
   if (error) throw error;
-  await logAdminAction("unblocked_user", "profiles", userId, { restoreRole: role });
-  return role;
+  await logAdminAction("unblocked_user", "profiles", userId, { is_active: true });
 };
 
-// Valider ou annuler une réservation (admin)
+// Valider ou annuler une réservation (même flux que le dashboard propriétaire)
 export const updateAdminBookingStatus = async (bookingId, status) => {
-  const { error } = await supabase
-    .from("reservations")
-    .update({ status })
-    .eq("id", bookingId);
-
-  if (error) throw error;
+  const updated = await ReservationService.updateStatus(bookingId, status);
 
   const action =
     status === "Confirmé" || status === "Payé"
@@ -443,7 +483,11 @@ export const updateAdminBookingStatus = async (bookingId, status) => {
         : "updated_booking_status";
 
   await logAdminAction(action, "reservations", bookingId, { status });
+  return updated;
 };
+
+const matchesSearch = (value, needle) =>
+  String(value ?? "").toLowerCase().includes(needle);
 
 // Recherche globale admin
 export const globalAdminSearch = async (query) => {
@@ -452,19 +496,18 @@ export const globalAdminSearch = async (query) => {
     return { users: [], fields: [], bookings: [], owners: [] };
   }
 
+  const needle = trimmed.toLowerCase();
   const term = `%${trimmed}%`;
 
-  const [usersRes, fieldsRes, bookingsRes, ownersRes] = await Promise.all([
+  const [profilesRes, fieldsRes, bookingsRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, name, email, role")
-      .or(`name.ilike.${term},email.ilike.${term}`)
-      .neq("role", "super_admin")
-      .limit(6),
+      .select("id, name, phone, role, is_active")
+      .limit(80),
     supabase
       .from("fields")
       .select("id, name, adress, field_source, status")
-      .ilike("name", term)
+      .or(`name.ilike.${term},adress.ilike.${term}`)
       .is("deleted_at", null)
       .limit(6),
     supabase
@@ -473,19 +516,41 @@ export const globalAdminSearch = async (query) => {
       .ilike("client_name", term)
       .order("created_at", { ascending: false })
       .limit(6),
-    supabase
-      .from("profiles")
-      .select("id, name, phone, ville, role")
-      .eq("role", "owner")
-      .or(`name.ilike.${term},phone.ilike.${term}`)
-      .limit(6),
   ]);
 
+  let profiles = profilesRes.data || [];
+  if (profilesRes.error) {
+    const retry = await supabase.from("profiles").select("id, name, phone, role").limit(80);
+    profiles = retry.data || [];
+  }
+
+  const matchedProfiles = profiles.filter((p) =>
+    matchesSearch(p.name, needle) || matchesSearch(p.phone, needle),
+  );
+
+  const users = matchedProfiles
+    .filter((p) => p.role !== "owner" && p.role !== "super_admin")
+    .slice(0, 6);
+  const owners = matchedProfiles
+    .filter((p) => p.role === "owner")
+    .slice(0, 6);
+
+  let fields = fieldsRes.data || [];
+  if (fieldsRes.error) {
+    const retry = await supabase
+      .from("fields")
+      .select("id, name, adress, field_source, status")
+      .ilike("name", term)
+      .is("deleted_at", null)
+      .limit(6);
+    fields = retry.data || [];
+  }
+
   return {
-    users: usersRes.data || [],
-    fields: fieldsRes.data || [],
+    users,
+    fields,
     bookings: bookingsRes.data || [],
-    owners: ownersRes.data || [],
+    owners,
   };
 };
 

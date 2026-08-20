@@ -79,14 +79,14 @@ export default function CreateProfile() {
         avatarUrl = data.publicUrl;
       }
 
-      const { error } = await supabase.from("profiles").insert({
+      const { error } = await supabase.from("profiles").upsert({
         id: user.id,
         name: formData.name,
         phone: formData.phone,
         ville: formData.ville,
         image: avatarUrl,
         role: formData.role,
-      });
+      }, { onConflict: "id" });
 
       if (error) {
         toast.error(error.message);

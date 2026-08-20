@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "../../services/supabaseClient";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router";
-import { getMaintenanceMode } from "../../utils/platformConfig";
+import { getPlatformSettings } from "../../services/adminService";
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -66,18 +66,18 @@ export default function Login() {
       // Vérifier si le profil existe et récupérer le rôle
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, role")
+        .select("id, role, is_active")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (profileData?.role === "blocked") {
+      if (profileData?.is_active === false) {
         await supabase.auth.signOut();
         toast.error("Votre compte a été suspendu. Contactez l'administration.");
         return;
       }
 
-      const maintenance = getMaintenanceMode();
-      if (maintenance && profileData?.role !== "super_admin") {
+      const settings = await getPlatformSettings();
+      if (settings?.maintenance_mode && profileData?.role !== "super_admin") {
         await supabase.auth.signOut();
         toast.warning("La plateforme est en maintenance. Réessayez plus tard.");
         return;

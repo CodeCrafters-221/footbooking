@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Briefcase, Map, Phone, Search, UserX, UserCheck, MessageCircle } from "lucide-react";
-import { getAdminOwners, suspendOwner, reactivateOwner } from "../../../services/adminService";
+import { getAdminOwners, suspendOwner, reactivateOwner, getAdminUsers } from "../../../services/adminService";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 
@@ -10,14 +10,25 @@ export default function AdminOwners() {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [search, setSearch] = useState("");
+  const [showSuspended, setShowSuspended] = useState(false);
+  const [suspendedOwners, setSuspendedOwners] = useState([]);
   const limit = 10;
 
   const fetchOwners = async () => {
     setLoading(true);
     try {
-      const { data, count } = await getAdminOwners(page, limit, search);
-      setOwners(data || []);
-      setTotalCount(count || 0);
+      if (showSuspended) {
+        const { data } = await getAdminUsers(1, 100, search);
+        const suspended = (data || []).filter(
+          (u) => u.backup_role === "owner",
+        );
+        setSuspendedOwners(suspended);
+        setTotalCount(suspended.length);
+      } else {
+        const { data, count } = await getAdminOwners(page, limit, search);
+        setOwners(data || []);
+        setTotalCount(count || 0);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Erreur lors du chargement des propriétaires");
@@ -29,7 +40,7 @@ export default function AdminOwners() {
   useEffect(() => {
     const t = setTimeout(() => fetchOwners(), 300);
     return () => clearTimeout(t);
-  }, [page, search]);
+  }, [page, search, showSuspended]);
 
   const handleSuspend = async (owner) => {
     if (!window.confirm(`Voulez-vous vraiment suspendre ${owner.name} ? Son compte passera en "user".`)) return;
@@ -40,6 +51,18 @@ export default function AdminOwners() {
       toast.success(`${owner.name} a été suspendu.`);
     } catch {
       toast.error("Erreur lors de la suspension.");
+    }
+  };
+
+  const handleReactivate = async (user) => {
+    if (!window.confirm(`Voulez-vous réactiver ${user.name} comme propriétaire ?`)) return;
+    try {
+      await reactivateOwner(user.id);
+      setSuspendedOwners(suspendedOwners.filter((u) => u.id !== user.id));
+      setTotalCount((prev) => prev - 1);
+      toast.success(`${user.name} a été réactivé comme propriétaire.`);
+    } catch {
+      toast.error("Erreur lors de la réactivation.");
     }
   };
 
@@ -62,8 +85,8 @@ export default function AdminOwners() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-[#2c241b] p-4 rounded-2xl border border-[#493622]">
+      {/* Search + Toggle */}
+      <div className="bg-[#2c241b] p-4 rounded-2xl border border-[#493622] flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <div className="relative w-full md:w-96">
           <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#cbad90]" />
           <input
@@ -74,6 +97,18 @@ export default function AdminOwners() {
             className="w-full pl-10 pr-4 py-2.5 bg-[#231a10] border border-[#493622] rounded-xl text-white text-sm focus:outline-none focus:border-primary transition-colors"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => { setShowSuspended(!showSuspended); setPage(1); }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+            showSuspended
+              ? "bg-red-500/10 text-red-400 border-red-500/20"
+              : "bg-[#231a10] text-[#cbad90] border-[#493622] hover:border-primary/50"
+          }`}
+        >
+          <UserX className="w-4 h-4" />
+          {showSuspended ? "Voir actifs" : "Voir suspendus"}
+        </button>
       </div>
 
       {/* Table */}
@@ -100,6 +135,50 @@ export default function AdminOwners() {
                     <td className="p-4"><div className="h-8 w-24 bg-[#493622] rounded-lg ml-auto"></div></td>
                   </tr>
                 ))
+              ) : showSuspended ? (
+                suspendedOwners.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="p-8 text-center text-[#cbad90]">
+                      Aucun propriétaire suspendu.
+                    </td>
+                  </tr>
+                ) : (
+                  suspendedOwners.map((u) => (
+                    <tr key={u.id} className="hover:bg-[#493622]/30 transition-colors group">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center text-red-400 font-bold text-sm">
+                            {u.name?.charAt(0)?.toUpperCase() || "?"}
+                          </div>
+                          <div>
+                            <p className="text-white font-bold text-sm">{u.name || "Inconnu"}</p>
+                            <p className="text-red-400 text-xs mt-0.5">Suspendu</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-[#cbad90] text-sm">{u.phone || "—"}</span>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-gray-500 text-sm italic">—</span>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-[#cbad90] text-sm">
+                          {new Date(u.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={() => handleReactivate(u)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors"
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                          Réactiver
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )
               ) : owners.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="p-8 text-center text-[#cbad90]">

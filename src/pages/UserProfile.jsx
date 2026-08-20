@@ -4,7 +4,9 @@ import Avis, { ReviewModal } from "../sections/profile/Avis";
 import Parametre from "../sections/profile/Parametre";
 import { ReservationService } from "../services/ReservationService";
 import { TerrainService } from "../services/TerrainService";
+import { ReportService } from "../services/ReportService";
 import { generateTicket } from "../utils/ticketGenerator";
+import { toast } from "react-toastify";
 import {
   MapPin,
   Edit2,
@@ -19,9 +21,11 @@ import {
   ChevronRight,
   Loader2,
   Heart,
+  Flag,
 } from "lucide-react";
 import Header from "../components/Header";
 import ReservationModal from "../components/ReservationModal";
+import ReportModal from "../components/ReportModal";
 import { useFavorites } from "../hooks/useFavorites";
 
 const UserProfile = () => {
@@ -36,6 +40,7 @@ const UserProfile = () => {
 
   const [selectedFavForReservation, setSelectedFavForReservation] = useState(null);
   const [isFavReservationOpen, setIsFavReservationOpen] = useState(false);
+  const [reportReservation, setReportReservation] = useState(null);
 
   // États pour la pagination des réservations
   const [upcomingPage, setUpcomingPage] = useState(1);
@@ -84,6 +89,27 @@ const UserProfile = () => {
       fetchReservations();
     }
   }, [user]);
+
+  const handleReportOwner = async ({ type, description }) => {
+    if (!reportReservation) return;
+    try {
+      await ReportService.createReport({
+        report_type: "comportement",
+        subject: type,
+        description: `Réservation ${reportReservation.id} — ${reportReservation.terrainName}${reportReservation.date ? ` — ${reportReservation.date}` : ""}${reportReservation.startTime ? ` — ${reportReservation.startTime.substring(0, 5)}` : ""}. ${description}`,
+        target_type: "proprietaire",
+        target_label: reportReservation.terrainName || "Terrain",
+      });
+      toast.success("Signalement envoyé ! Notre équipe va l'examiner.");
+      setReportReservation(null);
+    } catch (err) {
+      console.error("Erreur lors du signalement:", err);
+      toast.error(
+        err?.message ||
+          "Une erreur est survenue lors de l'envoi du signalement.",
+      );
+    }
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -370,6 +396,16 @@ const UserProfile = () => {
                           En attente de validation du propriétaire...
                         </div>
                       )}
+                      {res.status === "Payé" && (
+                        <button
+                          onClick={() => setReportReservation(res)}
+                          className="flex items-center justify-center gap-2 rounded-full h-11 px-6 bg-red-500/10 text-red-400 text-sm font-bold border border-red-500/20 hover:bg-red-500/70 hover:text-white transition-all"
+                          title="Signaler le propriétaire"
+                        >
+                          <Flag className="w-5 h-5" />
+                          <span>Signaler</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -449,17 +485,29 @@ const UserProfile = () => {
                         , {res.startTime.substring(0, 5)} • {res.location}
                       </p>
                     </div>
+                    <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => {
                         setSelectedTerrainForReview(res);
                         setIsReviewModalOpen(true);
                       }}
-                      className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-surface-highlight/50 text-text-secondary text-sm font-bold hover:text-white hover:bg-primary transition-all mt-2 group/btn"
+                      className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-surface-highlight/50 text-text-secondary text-sm font-bold hover:text-white hover:bg-primary transition-all group/btn"
                     >
                       <MessageSquarePlus className="w-[18px] h-[18px] group-hover/btn:scale-110 transition-transform" />
                       <span>Laisser un avis</span>
                     </button>
+                    {res.status === "Payé" && (
+                      <button
+                        onClick={() => setReportReservation(res)}
+                        className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-red-500/10 text-red-400 text-sm font-bold border border-red-500/20 hover:text-white hover:bg-red-500/70 transition-all group/btn"
+                        title="Signaler le propriétaire"
+                      >
+                        <Flag className="w-[18px] h-[18px] group-hover/btn:scale-110 transition-transform" />
+                        <span>Signaler</span>
+                      </button>
+                    )}
                   </div>
+                </div>
                 </div>
               ))
             ) : (
@@ -635,6 +683,28 @@ const UserProfile = () => {
             setRefreshReviewsCounter((prev) => prev + 1);
             // On pourrait aussi marquer la réservation comme "avis donné" si on avait un champ en BD
           }}
+        />
+      )}
+
+      {reportReservation && (
+        <ReportModal
+          isOpen
+          onClose={() => setReportReservation(null)}
+          title="Signaler le propriétaire"
+          subtitle={`Signalement concernant « ${reportReservation.terrainName} » après votre match`}
+          typeOptions={[
+            {
+              value: "Terrain non conforme à l'annonce",
+              label: "Terrain non conforme à l'annonce",
+            },
+            {
+              value: "Comportement inapproprié",
+              label: "Comportement inapproprié",
+            },
+            { value: "Problème de service", label: "Problème de service" },
+            { value: "Autre", label: "Autre" },
+          ]}
+          onSubmit={handleReportOwner}
         />
       )}
     </div>

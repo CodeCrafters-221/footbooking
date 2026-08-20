@@ -6,46 +6,50 @@ import {
   useMemo,
   useState,
 } from "react";
-import {
-  CONFIG_EVENTS,
-  getMaintenanceMode,
-  setMaintenanceMode as persistMaintenance,
-} from "../utils/platformConfig";
+import { getPlatformSettings, updatePlatformSettings } from "../services/adminService";
 
 const PlatformContext = createContext(null);
 
 export function PlatformProvider({ children }) {
-  const [maintenanceMode, setMaintenanceModeState] = useState(getMaintenanceMode);
+  const [maintenanceMode, setMaintenanceModeState] = useState(false);
+  const [contactEmail, setContactEmail] = useState("contact@footbooking.com");
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-  const syncFromStorage = useCallback(() => {
-    setMaintenanceModeState(getMaintenanceMode());
+  const fetchSettings = useCallback(async () => {
+    try {
+      const settings = await getPlatformSettings();
+      setMaintenanceModeState(settings?.maintenance_mode ?? false);
+      setContactEmail(settings?.contact_email || "contact@footbooking.com");
+    } catch (err) {
+      console.error("Erreur chargement paramètres plateforme:", err);
+    } finally {
+      setSettingsLoaded(true);
+    }
   }, []);
 
   useEffect(() => {
-    const onStorage = (e) => {
-      if (e.key === null || e.key?.includes("footbooking")) syncFromStorage();
-    };
-    const onCustom = () => syncFromStorage();
-    window.addEventListener("storage", onStorage);
-    window.addEventListener(CONFIG_EVENTS.CHANGED, onCustom);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener(CONFIG_EVENTS.CHANGED, onCustom);
-    };
-  }, [syncFromStorage]);
+    fetchSettings();
+  }, [fetchSettings]);
 
-  const setMaintenanceMode = useCallback((enabled) => {
-    persistMaintenance(enabled);
+  const setMaintenanceMode = useCallback(async (enabled) => {
     setMaintenanceModeState(enabled);
+    try {
+      await updatePlatformSettings({ maintenance_mode: enabled });
+    } catch (err) {
+      console.error("Erreur sauvegarde maintenance:", err);
+      setMaintenanceModeState(!enabled);
+    }
   }, []);
 
   const value = useMemo(
     () => ({
       maintenanceMode,
       setMaintenanceMode,
-      refreshPlatformConfig: syncFromStorage,
+      contactEmail,
+      refreshPlatformConfig: fetchSettings,
+      settingsLoaded,
     }),
-    [maintenanceMode, setMaintenanceMode, syncFromStorage],
+    [maintenanceMode, setMaintenanceMode, contactEmail, fetchSettings, settingsLoaded],
   );
 
   return (

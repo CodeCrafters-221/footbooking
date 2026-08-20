@@ -53,7 +53,7 @@ export default function AdminUsers() {
 
   const handleRoleChange = async (userId, newRole) => {
     const target = users.find((u) => u.id === userId);
-    if (target?.role === "blocked") {
+    if (target?.is_active === false) {
       toast.error("Débloquez l'utilisateur avant de changer son rôle.");
       return;
     }
@@ -80,17 +80,15 @@ export default function AdminUsers() {
     setActionLoading(true);
     try {
       if (action === "block") {
-        await blockUser(user.id, user.role);
+        await blockUser(user.id);
         setUsers((prev) =>
-          prev.map((u) => (u.id === user.id ? { ...u, role: "blocked" } : u)),
+          prev.map((u) => (u.id === user.id ? { ...u, is_active: false } : u)),
         );
         toast.success(`${user.name || "Utilisateur"} a été bloqué`);
       } else {
-        const restored = await unblockUser(user.id);
+        await unblockUser(user.id);
         setUsers((prev) =>
-          prev.map((u) =>
-            u.id === user.id ? { ...u, role: restored || "user" } : u,
-          ),
+          prev.map((u) => (u.id === user.id ? { ...u, is_active: true } : u)),
         );
         toast.success(`${user.name || "Utilisateur"} a été débloqué`);
       }
@@ -110,9 +108,6 @@ export default function AdminUsers() {
     }
     if (role === "owner") {
       return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    }
-    if (role === "blocked") {
-      return "bg-red-500/10 text-red-400 border-red-500/20";
     }
     return "bg-gray-500/10 text-gray-400 border-gray-500/20";
   };
@@ -179,7 +174,7 @@ export default function AdminUsers() {
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
-                            u.role === "blocked" ? "bg-red-500/20 border border-red-500/30" : "bg-[#493622]"
+                            u.is_active === false ? "bg-red-500/20 border border-red-500/30" : "bg-[#493622]"
                           }`}
                         >
                           {u.name?.charAt(0) || "U"}
@@ -201,12 +196,12 @@ export default function AdminUsers() {
                           <Shield className="w-3 h-3" />
                         ) : u.role === "owner" ? (
                           <UserCheck className="w-3 h-3" />
-                        ) : u.role === "blocked" ? (
+                        ) : u.is_active === false ? (
                           <Ban className="w-3 h-3" />
                         ) : (
                           <UserX className="w-3 h-3" />
                         )}
-                        {u.role === "blocked" ? "Bloqué" : u.role}
+                        {u.is_active === false ? "Bloqué" : u.role}
                       </span>
                     </td>
                     <td className="p-4">
@@ -218,7 +213,7 @@ export default function AdminUsers() {
                       <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-2">
                         {u.role !== "super_admin" && (
                           <>
-                            {u.role === "blocked" ? (
+                            {u.is_active === false ? (
                               <button
                                 type="button"
                                 onClick={() => openBlockConfirm(u, "unblock")}
@@ -238,9 +233,9 @@ export default function AdminUsers() {
                               </button>
                             )}
                             <select
-                              value={u.role === "blocked" ? "user" : u.role || "user"}
+                              value={u.is_active === false ? "user" : u.role || "user"}
                               onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                              disabled={u.role === "blocked"}
+                              disabled={u.is_active === false}
                               className="bg-[#231a10] border border-[#493622] rounded-lg text-white text-sm py-1.5 px-3 focus:outline-none focus:border-primary cursor-pointer disabled:opacity-50"
                             >
                               <option value="user">User</option>

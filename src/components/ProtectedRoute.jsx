@@ -25,7 +25,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     );
   }
 
-  if (profile?.role === "blocked") {
+  if (profile?.is_active === false) {
     return <MaintenancePage blocked />;
   }
 

@@ -393,7 +393,7 @@ export default function AdminFields() {
                               🌱 {field.pelouse || "Synthétique"}
                             </span>
                             <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-400 font-bold bg-[#1c1610] px-2 py-0.5 rounded border border-[#493622]/50">
-                              👥 5x5
+                              👥 {field.capacity ? `${field.capacity / 2}x${field.capacity / 2}` : "5x5"}
                             </span>
                           </div>
                         </div>
@@ -677,7 +677,7 @@ export default function AdminFields() {
                       </div>
                       <div>
                         <span className="text-gray-500 block">Format du terrain :</span>
-                        <span className="font-bold text-white">5x5 (10 joueurs)</span>
+                        <span className="font-bold text-white">{selectedField.capacity ? `${selectedField.capacity / 2}x${selectedField.capacity / 2} (${selectedField.capacity} joueurs)` : "5x5 (10 joueurs)"}</span>
                       </div>
                       <div>
                         <span className="text-gray-500 block">Tarif horaire :</span>
@@ -733,9 +733,9 @@ export default function AdminFields() {
                           </div>
                         </div>
 
-                        {selectedField.profiles?.phone && (
+                        {String(selectedField.profiles?.phone || "").replace(/[^0-9]/g, "") && (
                           <a 
-                            href={`https://wa.me/${selectedField.profiles.phone.replace(/[^0-9]/g, "")}`}
+                            href={`https://wa.me/${String(selectedField.profiles.phone).replace(/[^0-9]/g, "")}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="mt-4 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-3 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs shadow-md shadow-green-500/5 hover:shadow-green-500/15"

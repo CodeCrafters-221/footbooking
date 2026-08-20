@@ -9,6 +9,7 @@ export default function AddVitrineModal({ isOpen, onClose, onFieldAdded }) {
     name: "",
     adress: "",
     telephone: "",
+    description: "",
     price_per_hour: "",
     pelouse: "Synthétique",
     capacity: "10"
@@ -158,6 +159,18 @@ export default function AddVitrineModal({ isOpen, onClose, onFieldAdded }) {
                 <option value="Indoor">Indoor (Futsal)</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-[#cbad90] text-sm font-medium mb-2">Description</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              rows={3}
+              className="w-full px-4 py-2.5 bg-[#231a10] border border-[#493622] rounded-xl text-white focus:outline-none focus:border-primary transition-colors resize-none"
+              placeholder="Description du terrain, équipements, horaires..."
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-6 border-t border-[#493622]">

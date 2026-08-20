@@ -1,21 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getAdminNotificationFeed } from "../services/adminService";
 import {
-  CONFIG_EVENTS,
-  getReadNotificationIds,
-  markAllNotificationsRead,
-  markNotificationIdsRead,
-} from "../utils/platformConfig";
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsReadSupabase,
+} from "../services/adminService";
 
 export function useAdminNotifications() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [readIds, setReadIds] = useState(getReadNotificationIds);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const feed = await getAdminNotificationFeed();
+      const feed = await getNotifications();
       setItems(feed);
     } catch (err) {
       console.error("Notifications admin:", err);
@@ -27,37 +24,30 @@ export function useAdminNotifications() {
 
   useEffect(() => {
     load();
-    const syncRead = () => setReadIds(getReadNotificationIds());
-    window.addEventListener(CONFIG_EVENTS.CHANGED, syncRead);
-    return () => window.removeEventListener(CONFIG_EVENTS.CHANGED, syncRead);
   }, [load]);
 
-  const enriched = useMemo(
-    () =>
-      items.map((n) => ({
-        ...n,
-        read: readIds.includes(n.id),
-      })),
-    [items, readIds],
-  );
-
   const unreadCount = useMemo(
-    () => enriched.filter((n) => !n.read).length,
-    [enriched],
+    () => items.filter((n) => !n.is_read).length,
+    [items],
   );
 
-  const markAsRead = useCallback((id) => {
-    markNotificationIdsRead([id]);
-    setReadIds(getReadNotificationIds());
+  const markAsRead = useCallback(
+    async (id) => {
+      await markNotificationRead(id);
+      setItems((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+      );
+    },
+    [],
+  );
+
+  const markAllRead = useCallback(async () => {
+    await markAllNotificationsReadSupabase();
+    setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
   }, []);
 
-  const markAllRead = useCallback(() => {
-    markAllNotificationsRead(items.map((n) => n.id));
-    setReadIds(getReadNotificationIds());
-  }, [items]);
-
   return {
-    notifications: enriched,
+    notifications: items,
     unreadCount,
     loading,
     refresh: load,

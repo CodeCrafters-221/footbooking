@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import ReservationModal from "../components/ReservationModal";
+import ReportModal from "../components/ReportModal";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { decodeSanitizedString } from "../utils/security";
+import { ReportService } from "../services/ReportService";
 import {
   useAvailability,
   useTerrainData,
@@ -31,11 +33,13 @@ import {
   Camera,
   Phone,
   MessageCircle,
+  Flag,
 } from "lucide-react";
 
 export default function TerrainDetails() {
   const { id } = useParams();
   const [isReservationOpen, setIsReservationOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const { user, profile } = useAuth();
   const fileInputRef = useRef(null);
   const { terrain, setTerrain, isLoading } = useTerrainData(id);
@@ -100,6 +104,26 @@ export default function TerrainDetails() {
       toast.success("Terrain ajouté aux favoris !");
     } else {
       toast.info("Terrain retiré des favoris.");
+    }
+  };
+
+  const handleReportTerrain = async ({ type, description }) => {
+    try {
+      await ReportService.createReport({
+        report_type: "terrain",
+        subject: type,
+        description,
+        target_type: "terrain",
+        target_label: terrain.name,
+      });
+      toast.success("Signalement envoyé ! Notre équipe va l'examiner.");
+      setIsReportOpen(false);
+    } catch (err) {
+      console.error("Erreur lors du signalement:", err);
+      toast.error(
+        err?.message ||
+          "Une erreur est survenue lors de l'envoi du signalement.",
+      );
     }
   };
 
@@ -218,6 +242,24 @@ export default function TerrainDetails() {
               />
               {isSaved ? "Sauvegardé" : "Sauvegarder"}
             </button>
+            {!(user?.id === terrain.proprietaire_id) && (
+              <button
+                onClick={() => {
+                  if (!user) {
+                    toast.info(
+                      "Veuillez vous connecter pour signaler ce terrain.",
+                    );
+                    return;
+                  }
+                  setIsReportOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium transition-colors"
+                title="Signaler un problème"
+              >
+                <Flag className="w-[18px] h-[18px]" />
+                Signaler
+              </button>
+            )}
           </div>
         </div>
 
@@ -851,6 +893,21 @@ export default function TerrainDetails() {
           stadium={stadiumDataForModal}
           initialDate={selectedDate}
           initialTimeSlot={selectedTimeSlot}
+        />
+      )}
+      {isReportOpen && (
+        <ReportModal
+          isOpen
+          onClose={() => setIsReportOpen(false)}
+          title="Signaler ce terrain"
+          subtitle={`Signaler un problème concernant « ${terrain.name} »`}
+          typeOptions={[
+            { value: "Terrain non conforme", label: "Terrain non conforme" },
+            { value: "Photos trompeuses", label: "Photos trompeuses" },
+            { value: "Prix incorrect", label: "Prix incorrect" },
+            { value: "Autre", label: "Autre" },
+          ]}
+          onSubmit={handleReportTerrain}
         />
       )}
     </div>

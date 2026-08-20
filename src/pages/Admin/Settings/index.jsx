@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Settings2, Save, CreditCard, Shield, Globe } from "lucide-react";
 import { toast } from "react-toastify";
 import { usePlatform } from "../../../context/PlatformContext";
-import { logAdminAction } from "../../../services/adminService";
+import { getPlatformSettings, updatePlatformSettings } from "../../../services/adminService";
 
 export default function AdminSettings() {
   const { maintenanceMode, setMaintenanceMode } = usePlatform();
   const [saving, setSaving] = useState(false);
+  const [savingContactEmail, setSavingContactEmail] = useState(false);
+  const [initialContactEmail, setInitialContactEmail] = useState("contact@footbooking.com");
 
   const [settings, setSettings] = useState({
     platformFee: "5",
@@ -15,31 +17,31 @@ export default function AdminSettings() {
   });
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("footbooking_admin_settings");
-      if (saved) {
-        setSettings((prev) => ({ ...prev, ...JSON.parse(saved) }));
+    const loadSettings = async () => {
+      try {
+        const data = await getPlatformSettings();
+        setSettings({
+          platformFee: String(data.platform_fee ?? 5),
+          allowNewRegistrations: data.allow_new_registrations ?? true,
+          contactEmail: data.contact_email ?? "contact@footbooking.com",
+        });
+        setInitialContactEmail(data.contact_email ?? "contact@footbooking.com");
+      } catch (err) {
+        console.error("Erreur chargement paramètres:", err);
       }
-    } catch {
-      /* ignore */
-    }
+    };
+    loadSettings();
   }, []);
 
   const handleChange = (e) => {
     const value =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
-    setSettings({ ...settings, [e.target.name]: value });
+    setSettings((prev) => ({ ...prev, [e.target.name]: value }));
   };
 
-  const handleMaintenanceToggle = (e) => {
+  const handleMaintenanceToggle = async (e) => {
     const enabled = e.target.checked;
-    setMaintenanceMode(enabled);
-    logAdminAction(
-      enabled ? "enabled_maintenance" : "disabled_maintenance",
-      "platform",
-      null,
-      { enabled },
-    );
+    await setMaintenanceMode(enabled);
     toast.info(
       enabled
         ? "Mode maintenance activé — seuls les super admins ont accès."
@@ -50,18 +52,46 @@ export default function AdminSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      localStorage.setItem(
-        "footbooking_admin_settings",
-        JSON.stringify(settings),
-      );
-      await logAdminAction("updated_platform_settings", "platform", null, settings);
+      await updatePlatformSettings({
+        platform_fee: parseFloat(settings.platformFee) || 5,
+        allow_new_registrations: settings.allowNewRegistrations,
+        contact_email: settings.contactEmail,
+      });
+      const refreshed = await getPlatformSettings();
+      setSettings({
+        platformFee: String(refreshed.platform_fee ?? 5),
+        allowNewRegistrations: refreshed.allow_new_registrations ?? true,
+        contactEmail: refreshed.contact_email ?? "contact@footbooking.com",
+      });
+      setInitialContactEmail(refreshed.contact_email ?? "contact@footbooking.com");
       toast.success("Paramètres enregistrés avec succès !");
-    } catch {
-      toast.error("Erreur lors de l'enregistrement");
+    } catch (err) {
+      console.error("Erreur sauvegarde paramètres:", err);
+      toast.error(err?.message || "Erreur lors de l'enregistrement");
     } finally {
       setSaving(false);
     }
   };
+
+  const handleSaveContactEmail = async () => {
+    if (!settings.contactEmail.trim()) {
+      toast.error("L'email de contact ne peut pas être vide");
+      return;
+    }
+    setSavingContactEmail(true);
+    try {
+      await updatePlatformSettings({ contact_email: settings.contactEmail.trim() });
+      setInitialContactEmail(settings.contactEmail.trim());
+      toast.success("Email de contact enregistré !");
+    } catch (err) {
+      console.error("Erreur sauvegarde email:", err);
+      toast.error(err?.message || "Erreur lors de l'enregistrement");
+    } finally {
+      setSavingContactEmail(false);
+    }
+  };
+
+  const emailDirty = settings.contactEmail.trim() !== initialContactEmail;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -170,13 +200,31 @@ export default function AdminSettings() {
               <label className="block text-[#cbad90] text-sm font-medium mb-2">
                 Email de contact principal
               </label>
-              <input
-                type="email"
-                name="contactEmail"
-                value={settings.contactEmail}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-[#231a10] border border-[#493622] rounded-xl text-white focus:outline-none focus:border-primary transition-colors"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  name="contactEmail"
+                  value={settings.contactEmail}
+                  onChange={handleChange}
+                  className="flex-1 px-4 py-2.5 bg-[#231a10] border border-[#493622] rounded-xl text-white focus:outline-none focus:border-primary transition-colors"
+                />
+                {emailDirty && (
+                  <button
+                    type="button"
+                    onClick={handleSaveContactEmail}
+                    disabled={savingContactEmail}
+                    className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-background-dark font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-primary/20 disabled:opacity-50 shrink-0"
+                  >
+                    <Save className="w-4 h-4" />
+                    {savingContactEmail ? "..." : "Sauvegarder"}
+                  </button>
+                )}
+              </div>
+              {emailDirty && (
+                <p className="text-xs text-primary mt-2">
+                  Email modifié — cliquez sur Sauvegarder pour le persister.
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { getReports, saveReports } from "../../../utils/platformConfig";
+import { ReportService } from "../../../services/ReportService";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Tous les statuts" },
@@ -42,10 +42,24 @@ export default function AdminReports() {
   const [selected, setSelected] = useState(null);
   const [adminComment, setAdminComment] = useState("");
 
-  useEffect(() => {
+  const fetchReports = async () => {
     setLoading(true);
-    setReports(getReports());
-    setLoading(false);
+    try {
+      const data = await ReportService.getReports();
+      setReports(data.map((r) => ({
+        ...r,
+        status: r.status === "open" ? "nouveau" : r.status,
+      })));
+    } catch (err) {
+      console.error("Erreur chargement signalements:", err);
+      toast.error("Erreur lors du chargement des signalements");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
   }, []);
 
   const filtered = useMemo(() => {
@@ -75,29 +89,38 @@ export default function AdminReports() {
     setAdminComment(report.adminComment || "");
   };
 
-  const persist = (updated) => {
-    setReports(updated);
-    saveReports(updated);
+  const handleStatusChange = async (newStatus) => {
+    if (!selected) return;
+    try {
+      await ReportService.updateReportStatus(selected.id, newStatus);
+      setSelected({ ...selected, status: newStatus });
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === selected.id ? { ...r, status: newStatus } : r,
+        ),
+      );
+      toast.success("Statut mis à jour");
+    } catch (err) {
+      console.error("Erreur update statut:", err);
+      toast.error("Erreur lors de la mise à jour du statut");
+    }
   };
 
-  const handleStatusChange = (newStatus) => {
+  const handleSaveComment = async () => {
     if (!selected) return;
-    const updated = reports.map((r) =>
-      r.id === selected.id ? { ...r, status: newStatus, adminComment } : r,
-    );
-    persist(updated);
-    setSelected({ ...selected, status: newStatus, adminComment });
-    toast.success("Statut mis à jour");
-  };
-
-  const handleSaveComment = () => {
-    if (!selected) return;
-    const updated = reports.map((r) =>
-      r.id === selected.id ? { ...r, adminComment } : r,
-    );
-    persist(updated);
-    setSelected({ ...selected, adminComment });
-    toast.success("Commentaire enregistré");
+    try {
+      await ReportService.addReportComment(selected.id, adminComment);
+      setSelected({ ...selected, adminComment });
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === selected.id ? { ...r, adminComment } : r,
+        ),
+      );
+      toast.success("Commentaire enregistré");
+    } catch (err) {
+      console.error("Erreur sauvegarde commentaire:", err);
+      toast.error("Erreur lors de l'enregistrement du commentaire");
+    }
   };
 
   return (

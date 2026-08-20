@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../services/supabaseClient";
+import { getPlatformSettings } from "../../services/adminService";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router";
 
@@ -48,6 +49,13 @@ export default function Register() {
 
     try {
       setIsLoading(true);
+
+      const settings = await getPlatformSettings();
+      if (!settings.allow_new_registrations) {
+        toast.error("Les inscriptions sont temporairement fermées.");
+        setIsLoading(false);
+        return;
+      }
 
       const { error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
