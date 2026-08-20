@@ -27,3 +27,6 @@ node_modules/
 .vite/
 
 .env
+
+# Supabase CLI local cache
+supabase/.temp/
